@@ -1,0 +1,152 @@
+<aura:component implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" controller="AuthentiSignMappingCtrl" >
+    <aura:html tag="style">.toastMessage.forceActionsText{white-space : pre-line !important;}</aura:html>
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    
+    <!--Fields sent from parent control-->
+    <aura:attribute name="quoteId" type="string" />
+    <aura:attribute name="documentId" type="string" />
+    <aura:attribute name="documentName" type="string" />
+    <aura:attribute name="objectName" type="string" />
+    
+    <!--Data returned from controller which includes records of Quote and Quote line items , field description for Quote and Quote line items and participients list-->
+    <aura:attribute name="allData" type="object" />
+    
+    <!--Lists to populate dropdowns-->
+    <aura:attribute name="roles" type="List" />
+    <aura:attribute name="usercontactfields" type="List" />
+    
+    <!--Signers list-->
+    <aura:attribute name="signers" type="List" />
+  
+    <aura:attribute name="VfPageMethod" type="object"/>  <!--Attribute to take Vf page method-->
+  	<aura:attribute name="showMessage" type="boolean" />
+    <aura:attribute name="messageTitle" type="string" />
+    <aura:attribute name="messageType" type="string" />
+    <aura:attribute name="message" type="string" />
+    
+    <aura:attribute name="spinner" type="boolean" default="false"/>
+    
+    <!--loading spinner start-->
+    <aura:if isTrue="{!v.spinner}">
+        <div aura:id="spinnerId" class="slds-spinner_container">
+            <div class="slds-spinner--brand  slds-spinner slds-spinner--large slds-is-relative" role="alert">
+                <span class="slds-assistive-text">Loading...</span>
+                <div class="slds-spinner__dot-a"></div>
+                <div class="slds-spinner__dot-b"></div>
+            </div>
+        </div>
+    </aura:if>
+    
+    <lightning:card variant="base" title="Add Signers">
+        <aura:set attribute="actions">
+            <button aura:id="btnBack" class="slds-button slds-button_brand"  onclick="{!c.back}" >Back</button>
+        </aura:set>
+        <p class="slds-p-horizontal_small">
+            
+            <div class="slds-grid slds-wrap" >
+                <div class="slds-col slds-size_2-of-12" ></div>
+                <div class="slds-col slds-size_5-of-12" >
+                    <h1 id="element-with-table-label" class="slds-text-heading_medium slds-m-bottom_xx-small slds-size_4-of-8">Document: </h1>
+                    <h3 id="element-with-table-label" class="slds-text-heading_small slds-m-bottom_xx-small slds-size_4-of-8">{!v.documentName}</h3>
+                </div>
+                <div class="slds-col slds-size_5-of-12" >
+                    <h1 id="element-with-table-label" class="slds-text-heading_medium slds-m-bottom_xx-small slds-size_4-of-8">Quote: </h1>
+                    <h3 id="element-with-table-label" class="slds-text-heading_small slds-m-bottom_xx-small slds-size_4-of-8">{!v.allData.quote.Name}</h3>
+                </div>
+            </div>
+            <aura:if isTrue="{!v.showMessage}">
+                <div class="slds-grid slds-wrap" >
+                    <div class="slds-col slds-size_4-of-12" ></div>
+                    <div class="slds-col slds-size_4-of-12" >
+                        <ui:message title="{!v.messageTitle}" severity="{!v.messageType}" closable="true" >
+                            {!v.message}
+                        </ui:message>
+                    </div>
+                    <div class="slds-col slds-size_4-of-12" ></div>
+                </div>
+            </aura:if>
+            <br/>
+            <br/>
+            <div class="slds-grid slds-wrap" >
+                <div class="slds-col slds-size_2-of-12" ></div>
+                <div class="slds-col slds-size_7-of-12" >
+                    <h2 id="element-with-table-label" class="slds-text-heading_medium slds-m-bottom_xx-small slds-size_4-of-8">Signers</h2>
+                </div>
+                <div class="slds-col slds-size_1-of-12" style="text-align:right;" >
+                    <button aura:id="btnAdd" class="slds-button slds-button_brand"  onclick="{!c.addSigner}" >Add</button>
+                </div>
+            </div>
+            <div class="slds-grid slds-wrap" >
+                
+                <div class="slds-col slds-size_2-of-12" ></div>
+                <div class="slds-col slds-size_8-of-12" >
+                    <!--New Table logic-->
+                    <table class="slds-table slds-table_cell-buffer slds-table_bordered" aria-labelledby="element-with-table-label other-element-with-table-label">
+                        <thead>
+                            <tr class="slds-line-height_reset">
+                                <th class="" scope="col">
+                                    <div class="slds-truncate" title="Role">Role</div>
+                                </th>
+                                <th class="" scope="col">
+                                    <div class="slds-truncate" title="Type">User/Contact</div>
+                                </th>
+                                <th class="" scope="col">
+                                    <div class="slds-truncate" title="Name">Name</div>
+                                </th>
+                                <th class="" scope="col">
+                                    <div class="slds-truncate" title="Email">Email</div>
+                                </th>
+                                <th class="" scope="col">
+                                    <div class="slds-truncate" title="Type">Type</div>
+                                </th>
+                                <th>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <aura:iteration items="{!v.signers}" var="record" indexVar="index"> 
+                                <tr class="slds-hint-parent">
+                                    <td data-label="Role" style="width:20%">
+                                        <lightning:input type="text" value="{!record.data.Role}"  aura:id="{!'txtRole-'+index}" name="{!'txtRole-'+index}" label=""  />
+                                    </td>
+                                    <td data-label="User/Contact">
+                                        <lightning:select  aura:id="{!'ddlUserContact-'+index}" name="{!'ddlUserContact-'+index}" title="{!record.name}"  label="" onchange="{!c.handleUserContactddl}" >
+                                            <aura:iteration items="{!v.usercontactfields}" var="fld" >
+                                                <option text="{!fld.name}" value="{!fld.value}"></option>
+                                            </aura:iteration>
+                                        </lightning:select>
+                                    </td>
+                                    <td data-label="Name">
+                                        <div class="slds-truncate" title="">{!record.data.Name}</div>
+                                    </td>
+                                    <td data-label="Email">
+                                        <div class="slds-truncate" title="">{!record.data.Email}</div>
+                                    </td>
+                                    <td data-label="User/Contact Type">
+                                        <div class="slds-truncate" title="">{!record.data.Type}</div>
+                                    </td>
+                                    <td  style="width:5%">
+                                        <lightning:buttonIcon iconName="utility:delete" variant="bare" name="{!'btnDelete-'+index}" aura:id="{!'btnDelete-'+index}" onclick="{! c.deleteSigner }" alternativeText="Delete" title="Delete" />
+                                    </td>
+                                </tr>
+                            </aura:iteration>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="slds-col slds-size_2-of-12" ></div>
+            </div>
+            <br/>
+            <br/>
+            <div class="slds-grid slds-wrap" >
+                
+                <div class="slds-col slds-size_2-of-12" ></div>
+                <div class="slds-col slds-size_8-of-12" >
+                    <button aura:id="btnSubmit" class="slds-button slds-button_brand"  onclick="{!c.createRequest}" >Submit Request</button>
+                </div>
+                <div class="slds-col slds-size_2-of-12" ></div>
+            </div>
+            <br/>
+            <br/>
+        </p>
+    </lightning:card>
+</aura:component>

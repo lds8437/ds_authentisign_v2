@@ -1,0 +1,107 @@
+<apex:component >
+    <apex:attribute name="SelectOptionUserContact" type="SelectOption"  required="true" description=""/>
+    <apex:attribute name="ParticipantMappingValues" type="ParticipantMappingValue[]"  required="true" description=""/>
+    <apex:attribute name="documentSigningStatus" type="string"  required="true" description=""/>
+    
+    <div class="quoteBlock">
+        <div class="bPageBlock brandSecondaryBrd apexDefaultPageBlock secondaryPalette"> 
+            <div class="pbHeader">
+                <table border="0" cellpadding="0" cellspacing="0">
+                    <tbody>
+                        <tr>
+                            <td class="pbTitle"><h2 class="mainTitle">Add Signers</h2></td>
+                            <td id="" class="pbButton ">
+                                <input type="button" name="" value="Back" onclick="BackToLayoutClient();return false;" class="btn" />
+                                <input type="button" name=" " value="Submit" onclick="SubmitSignersClient();return false;" class="btn" />
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <apex:outputPanel rendered="{!documentSigningStatus != ''}"  >
+            	{!documentSigningStatus}
+            </apex:outputPanel>
+            <div class="pbHeader">
+                <table border="0" cellpadding="0" cellspacing="0">
+                    <tbody>
+                        <tr>
+                            <td class="pbTitle">
+                                <!--<h2 class="mainTitle">Signers</h2>-->
+                                <input type="button" name="" value="Add" onclick="AddSignersClient();return false;" class="btn" />
+                            </td>
+                            
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="pbBody">
+                <table style="width:100%"  class="list" border="0" cellpadding="0" cellspacing="0">
+                    <thead >
+                        <tr class="headerRow">
+                            
+                            <th class="headerRow">
+                                Role
+                            </th>
+                            <th class="headerRow">
+                                User/Contact
+                            </th>
+                            <th  class="headerRow">
+                                Name
+                            </th>
+                            <th class="headerRow">
+                                Email
+                            </th>
+                            <th class="headerRow">
+                                Type
+                            </th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                         <apex:repeat value="{!ParticipantMappingValues}" var="record"    >
+                            <tr>
+                                
+                                <td class="dataCell" style="width:15%"> 
+                                    <apex:inputText value="{!record.role}" id="txtRole"/>
+                                </td>
+                                <td class="dataCell" style="width:15%"> 
+                                    <apex:selectList label="Select User Field"  size="1"   value="{!record.lookupfield}" >
+                                        <apex:selectOptions value="{!SelectOptionUserContact}" />
+                                        <apex:actionSupport event="onchange" onsubmit="SetParticipantValues();return false;"   /> 
+                                    </apex:selectList> 
+                                </td>
+                                <td class="dataCell" style="width:25%"> 
+                                    {!record.name}
+                                    &nbsp;
+                                </td>
+                                <td class="dataCell" style="width:25%"> 
+                                    {!record.email}
+                                    &nbsp;
+                                </td>
+                                <td class="dataCell" style="width:20%"> 
+                                    {!record.objecttype}
+                                    &nbsp;
+                                </td>
+                                <td>
+                                    <input type="button" name=" " value="Delete" onclick="DeleteSigner('{!record.index}');return false;" class="btn" /> 
+                                </td>
+                            </tr>
+                        </apex:repeat>
+                    </tbody>
+                </table>
+            </div>
+            <div class="pbBottomButtons">
+                <table border="0" cellpadding="0" cellspacing="0">
+                    <tbody>
+                        <tr>
+                            <td class="pbTitle">&nbsp;</td>
+                            <td   class="pbButtonb">
+                                
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</apex:component>

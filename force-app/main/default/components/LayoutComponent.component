@@ -1,0 +1,118 @@
+<apex:component >
+    
+    <apex:attribute name="selectedLayout" description="" type="string" required="true"/>
+    <apex:attribute name="selectedDocument" description="" type="string" required="true"/>
+    <apex:attribute name="layouts" description="" type="list" required="true"/>
+    <apex:attribute name="documents" description="" type="list" required="true"/>
+    <apex:attribute name="signingStatus" description="" type="string" required="true"/>
+    <apex:attribute name="savedLayoutId" description="" type="string" required="true"/>
+    <apex:attribute name="attachmentId" description="" type="string" required="true"/>
+    <apex:attribute name="selectedOption" description="" type="string" required="true"/>
+    <apex:attribute name="selectOptions" description="" type="list" required="true"/>
+    <apex:attribute name="documentSigningId" description="" type="string" required="true"/>
+    <apex:attribute name="documentSigningStatus" description="" type="string" required="true"/>
+    <apex:attribute name="documentLink" description="" type="string" required="true"/>
+    <apex:attribute name="documentAttachmentId" description="" type="string" required="true"/>
+    
+    <apex:pageBlock title="Authentisign Layout" id="pageblock" >
+        <apex:pageBlockButtons >
+            <!--Layout Buttons-->
+            <apex:outputPanel layout="none" rendered="{!selectedOption=='Layout'}">
+                <apex:outputPanel layout="none" rendered="{!AND(selectedLayout != '',savedLayoutId == '')}" id="btnPanel">
+                    <apex:commandButton value="Start Mapping"  onclick="GotoMappingsClient();return false;" reRender="layoutForm" /> 
+                </apex:outputPanel>
+                <apex:outputPanel layout="none" rendered="{!savedLayoutId != ''}" id="pnlpdf" >
+                    <apex:commandButton value="Show PDF" onclick="displayPDF('{!attachmentId}');return false;" /> 
+                </apex:outputPanel>
+            </apex:outputPanel>
+            <!--Document Buttons-->
+            <apex:outputPanel layout="none" rendered="{!selectedOption=='Document'}">
+                <apex:outputPanel layout="none" rendered="{!AND(selectedDocument != '', documentSigningId == '')}" id="btnDocumentAdd">
+                    <apex:commandButton value="Add Signers"  onclick="GotoSignersClient();return false;" reRender="layoutForm" /> 
+                </apex:outputPanel>
+                <apex:outputPanel layout="none" rendered="{!AND(documentSigningId != '', OR(documentSigningStatus == 'Signing has not been finalized.', documentSigningStatus == 'sent',documentSigningStatus == 'document signed'))}" id="btnDocumentShowPDF">
+                    <!--<apex:commandButton value="Show PDF"  onclick="showDocumentLink();return false;" reRender="layoutForm" /> -->
+                    <apex:commandButton value="Show PDF" onclick="displayDocumentPDF('{!documentAttachmentId}');return false;" /> 
+                </apex:outputPanel>
+            </apex:outputPanel>
+        </apex:pageBlockButtons>
+        <apex:pageBlockSection >
+            <apex:selectRadio value="{!selectedOption}" >
+                <apex:selectOptions value="{!selectOptions}" />
+                <apex:actionSupport event="onchange" rerender="layoutForm" /> 
+            </apex:selectRadio> 
+            <br/>
+            <!--Document Select List-->
+            <apex:outputPanel rendered="{!selectedOption == 'Document'}"  >
+                <apex:selectList label="Select Document" value="{!selectedDocument}" size="1" style="width:100%"  rendered="{!selectedOption=='Document'}"  disabled="{!documentSigningId != ''}" >
+                    <apex:selectOptions value="{!documents}"/>
+                    <apex:actionSupport event="onchange" rerender="layoutForm" /> 
+                </apex:selectList>
+                <!--
+                <br/><br/>
+                <apex:outputPanel layout="none" rendered="{!AND(documentSigningStatus!= '',documentSigningStatus != 'success')}" >
+                	{!documentSigningStatus}
+                </apex:outputPanel>
+                <apex:outputPanel layout="none" rendered="{!documentSigningStatus == 'success'}" >
+                    Signing Completed
+                </apex:outputPanel>-->
+            </apex:outputPanel>
+            <!--Layout Select List-->
+            <apex:outputPanel rendered="{!selectedOption == 'Layout'}"  >
+                <apex:selectList label="Select Layout" value="{!selectedLayout}" size="1" style="width:100%" disabled="{!savedLayoutId != ''}"  rendered="{!selectedOption=='Layout'}" >
+                    <apex:selectOptions value="{!layouts}"/>
+                    <apex:actionSupport event="onchange" rerender="layoutForm" /> 
+                </apex:selectList> 
+            </apex:outputPanel>
+            
+        </apex:pageBlockSection>
+    </apex:pageBlock>
+    <script>
+    var theattid;
+    var thedocattid;
+    
+    function displayPDF(attachId)
+    {
+        console.log(attachId);
+        if(attachId)
+        {
+            theattid = attachId;
+        }
+        if(theattid && !attachId)
+        {
+            attachId = theattid;
+        }
+        
+        if(attachId)
+            window.open("/servlet/servlet.FileDownload?file="+attachId,"_blank");
+        else{
+            GeneratePDFClient();
+        }
+    }
+    
+    function displayDocumentPDF(attachId)
+    {
+        console.log(attachId);
+        if(thedocattid)
+        {
+            thedocattid = attachId;
+        }
+        if(thedocattid && !attachId)
+        {
+            attachId = thedocattid;
+        }
+        
+        if(attachId)
+            window.open("/servlet/servlet.FileDownload?file="+attachId,"_blank");
+        else{
+            GenerateDocumentPDFClient();
+        }
+    }
+    
+    function showDocumentLink()
+    {
+        window.open("{!documentLink}","_blank");
+    }
+    
+    </script>
+</apex:component>

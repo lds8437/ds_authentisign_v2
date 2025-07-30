@@ -1,0 +1,125 @@
+<aura:component implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction,force:hasSObjectName" access="global" controller="LayoutListCtrl" >
+    
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:attribute name="layouts" type="list" />
+    <aura:attribute name="data" type="list" />
+    <aura:attribute name="selectedRecord" type="string" />
+    <aura:attribute name="savedLayoutId" type="string" />
+    <aura:attribute name="signingStatus" type="string" />
+    <aura:attribute name="attachmentId" type="string" />
+    <aura:attribute name="documentAttachmentId" type="string" />
+    <aura:attribute name="quote" type="object" />
+    <aura:attribute name="selectedOption" type="String" default="document"/>
+    <aura:attribute name="radioOptions" type="list" />
+    
+    <aura:attribute name="documents" type="list" />
+    <aura:attribute name="selectedDocument" type="string" />
+    <aura:attribute name="selectedDocumentName" type="string" />
+    <aura:attribute name="documentSigningId" type="string" />
+    <aura:attribute name="documentSigningStatus" type="string" />
+    <aura:attribute name="documentSigningStatusMessage" type="string" />
+    <aura:attribute name="documentSigningUrl" type="string" />
+    
+    <aura:attribute name="spinner" type="boolean" default="false"/>
+
+    <!--loading spinner start-->
+    <!--<aura:if isTrue="{!v.spinner}">
+        <div aura:id="spinnerId" class="slds-spinner_container">
+            <div class="slds-spinner- -brand  slds-spinner slds-spinner- -large slds-is-relative" role="alert">
+                <span class="slds-assistive-text">Loading...</span>
+                <div class="slds-spinner__dot-a"></div>
+                <div class="slds-spinner__dot-b"></div>
+            </div>
+        </div>
+    </aura:if>-->
+    
+    <lightning:card variant="base" title="Authentisign Layout">
+        <div class="slds-form-element slds-p-horizontal_small">
+            <!--<label class="slds-form-element__label" for="radio-group">Select an option:</label>-->
+            <div class="slds-form-element__control">
+                <lightning:radioGroup name="radioGroup"
+                                      options="{!v.radioOptions}"
+                                      value="{!v.selectedOption}"
+                                      onchange="{!c.handleChangeRadio}"/>
+            </div>
+        </div>
+        <aura:if isTrue="{!v.selectedOption == 'document'}">
+            <div class=" slds-p-horizontal_small">
+                <div class="slds-form-element__control" >
+                    <lightning:select aura:id="ddlDocuments" name="ddlDocuments" value="{!v.selectedDocument}" label="" onchange="{!c.handleChangeDocument}" disabled="{!IF(AND(v.selectedDocument != null, v.documentSigningId != null ),'disabled','')}"  >  <!--  -->
+                        <aura:iteration items="{!v.documents}"  var="record">
+                            <option  label="{!record.name}" value="{!record.value}"></option> <!--selected="{!record.value == v.selectedDocument}"-->
+                        </aura:iteration>
+                    </lightning:select>
+                </div>
+            </div>
+            <aura:if isTrue="{!v.documentSigningId != null}">
+                <br/>
+                <p style="margin-left:15px;">
+                    <b>Status :</b> 
+                    &nbsp;&nbsp;
+                    <aura:if isTrue="{!v.documentSigningStatus != 'document signed'}">
+                        <span class="slds-badge">{!v.documentSigningStatus}</span>
+                    </aura:if>
+                    <aura:if isTrue="{!v.documentSigningStatus == 'document signed'}">
+                        <span class="slds-badge slds-theme_success">{!v.documentSigningStatus}</span>
+                        <br/>
+                        <!--<a href="{!v.documentSigningUrl}" target="_blank">Signed Document Link</a>-->
+                    </aura:if>
+                </p>
+                <br/>
+                <p style="margin-left:15px;">
+                    <b>Preview :</b>&nbsp;&nbsp; <lightning:buttonIcon size="large" iconName="utility:pdf_ext" variant="bare" onclick="{! c.displaypdfdocument }" alternativeText="PDF" title="PDF" />
+                </p>
+            </aura:if>
+            <br/>
+            <p class="slds-p-horizontal_small">
+                <div class="slds-form-element__control">
+                    <div class="slds-col slds-size_12-of-12" style="text-align:right;">
+                        &nbsp;<button aura:id="btnStartDocument" class="slds-right slds-button slds-button_brand slds-hide" onclick="{!c.navigateToSigners}">Start</button>
+                    </div>
+                </div>
+            </p>
+            <aura:set attribute="else">
+                
+                <p class="slds-p-horizontal_small">
+                    <div class="slds-form-element__control" >
+                        <lightning:select name="ddlLayout" value="{!v.selectedRecord}" label="" onchange="{!c.handleLayoutChange}" disabled="{!IF(v.savedLayoutId != null,'disabled','')}" >
+                            <aura:iteration items="{!v.layouts}"  var="record">
+                                <option text="{!record.name}" selected="{!record.id == v.selectedRecord}"  value="{!record.id}"></option>
+                            </aura:iteration>
+                        </lightning:select>
+                    </div>                  
+                </p>
+                <aura:if isTrue="{!v.savedLayoutId != null}">
+                    <br/>
+                    <p style="margin-left:15px;">
+                        <b>Status :</b> 
+                        &nbsp;&nbsp;
+                        <aura:if isTrue="{!v.signingStatus != 'document signed'}">
+                            <span class="slds-badge">{!v.signingStatus}</span>
+                        </aura:if>
+                        <aura:if isTrue="{!v.signingStatus == 'document signed'}">
+                            <span class="slds-badge slds-theme_success">{!v.signingStatus}</span>
+                        </aura:if>
+                    </p>
+                    <br/>
+                    <p style="margin-left:15px;">
+                        <b>Preview :</b>&nbsp;&nbsp; <lightning:buttonIcon size="large" iconName="utility:pdf_ext" variant="bare" onclick="{! c.displaypdf }" alternativeText="PDF" title="PDF" />
+                    </p>
+                </aura:if>
+                <br/>
+                <p class="slds-p-horizontal_small">
+                    <div class="slds-form-element__control">
+                        <div class="slds-col slds-size_12-of-12" style="text-align:right;">
+                            &nbsp;<button aura:id="btnStart" class="slds-right slds-button slds-button_brand slds-hide" onclick="{!c.navigateToMappings}">Start</button>
+                        </div>
+                    </div>
+                </p>
+                
+                
+            </aura:set>
+        </aura:if>
+        
+    </lightning:card>
+</aura:component>

@@ -1,0 +1,182 @@
+<apex:component >
+    
+    <apex:attribute name="SelectOptionQuote" type="SelectOption"  required="true" description=""/>
+    <apex:attribute name="SelectOptionQuoteLI" type="SelectOption"  required="true" description=""/>
+    <apex:attribute name="SelectOptionLIRecords" type="SelectOption"  required="true" description=""/>
+    <apex:attribute name="SelectOptionUserContact" type="SelectOption"  required="true" description=""/>
+    <apex:attribute name="MappingValues" type="FieldMappingValue[]"  required="true" description=""/>
+    <apex:attribute name="ParticipantMappingValues" type="ParticipantMappingValue[]"  required="true" description=""/>
+    
+    <!--
+<apex:pageBlock title="Authentisign Mappings" id="mappingPageblock" >
+<apex:pageBlockButtons >
+<apex:commandButton value="Back" onclick="BackToLayoutClient();return false;"   /> 
+<apex:commandButton value="Submit" onclick="Submit();return false;"   /> 
+
+</apex:pageBlockButtons>
+<apex:pageBlockSection columns="1" 	collapsible="true" >
+
+</apex:pageBlockSection>
+</apex:pageBlock>-->
+    <div class="quoteBlock">
+        <div class="bPageBlock brandSecondaryBrd apexDefaultPageBlock secondaryPalette"> 
+            <div class="pbHeader">
+                <table border="0" cellpadding="0" cellspacing="0">
+                    <tbody>
+                        <tr>
+                            <td class="pbTitle"><h2 class="mainTitle">Authentisign Mappings</h2></td>
+                            <td id="" class="pbButton ">
+                                <input type="button" name="" value="Back" onclick="BackToLayoutClient();return false;" class="btn" />
+                                <input type="button" name=" " value="Submit" onclick="Submit();return false;" class="btn" />
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="pbBody">
+                <table style="width:100%"  class="list" border="0" cellpadding="0" cellspacing="0">
+                    <thead >
+                        <tr class="headerRow">
+                            <th class="headerRow">
+                                AuthentiSign Fields
+                            </th>
+                            <th class="headerRow">
+                                Map to Quote Line Item
+                            </th>
+                            <th  class="headerRow">
+                                Salesforce Fields
+                            </th>
+                            <th class="headerRow">
+                                Value
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <apex:repeat value="{!MappingValues}" var="record">
+                            <tr> <!--style="width:25%"-->
+                                <td class="dataCell" style="width:15%"> 
+                                    <span>{!record.ASFieldName}</span>
+                                </td>
+                                <td class="dataCell" style="width:15%">
+                                    <apex:inputCheckbox value="{!record.IsLineItem}" selected="{!record.IsLineItem}" >
+                                        <apex:actionSupport event="onchange" reRender="pnlQuote,pnlQuoteLineItem" oncomplete="refreshParent();"   />
+                                    </apex:inputCheckbox>
+                                </td>
+                                <td class="dataCell" style="width:50%">
+                                    <!--Quote Fields Dropdown-->
+                                    <apex:outputPanel layout="none" rendered="{!record.IsLineItem == false}" id="pnlQuote" >
+                                        <apex:selectList label="Select Quote Field"  size="1" value="{!record.Field}"   >
+                                            <apex:selectOptions value="{!SelectOptionQuote}"/>
+                                            <apex:actionSupport event="onchange"   onsubmit="SetFieldValues();return false;" />
+                                        </apex:selectList> 
+                                    </apex:outputPanel>
+                                    <apex:outputPanel layout="none" rendered="{!record.IsLineItem == true}" id="pnlQuoteLineItem" >
+                                        <!--Line Item Records Dropdown-->
+                                        <apex:selectList label="Select Quote Line Item Record"  size="1" value="{!record.LineItemIndex}" >
+                                            <apex:selectOptions value="{!SelectOptionLIRecords}" />
+                                            <apex:actionSupport event="onchange" onsubmit="SetFieldValues();return false;"  />
+                                        </apex:selectList> 
+                                        
+                                        <!--Line Item Fields Dropdown-->
+                                        <apex:selectList label="Select Quote LineItem Field"  size="1" value="{!record.Field}"  >
+                                            <apex:selectOptions value="{!SelectOptionQuoteLI}"/>
+                                            <apex:actionSupport event="onchange" onsubmit="SetFieldValues();return false;"   />
+                                        </apex:selectList> 
+                                    </apex:outputPanel>
+                                </td>
+                                
+                                <td class="dataCell" style="width:20%">
+                                    <apex:outputText value="{!record.Value}"  />
+                                </td>
+                            </tr>
+                        </apex:repeat>
+                    </tbody>
+                </table>
+            </div>
+        	<div class="pbBottomButtons">
+                <table border="0" cellpadding="0" cellspacing="0">
+                    <tbody>
+                        <tr>
+                            <td class="pbTitle">&nbsp;</td>
+                            <td   class="pbButtonb">
+                                
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="pbHeader">
+                <table border="0" cellpadding="0" cellspacing="0">
+                    <tbody>
+                        <tr>
+                            <td class="pbTitle"><h2 class="mainTitle">Participants</h2></td>
+                            
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="pbBody">
+                <table style="width:100%"  class="list" border="0" cellpadding="0" cellspacing="0">
+                    <thead >
+                        <tr class="headerRow">
+                            <th class="headerRow">
+                                Role
+                            </th>
+                            <th class="headerRow">
+                                User/Contact
+                            </th>
+                            <th  class="headerRow">
+                                Name
+                            </th>
+                            <th class="headerRow">
+                                Email
+                            </th>
+                            <th class="headerRow">
+                                Type
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <apex:repeat value="{!ParticipantMappingValues}" var="record">
+                            <tr>
+                                <td class="dataCell" style="width:15%"> 
+                                    <span>{!record.role}</span>
+                                </td>
+                                <td class="dataCell" style="width:15%"> 
+                                    <apex:selectList label="Select User Field"  size="1"   value="{!record.lookupfield}" >
+                                        <apex:selectOptions value="{!SelectOptionUserContact}" />
+                                        <apex:actionSupport event="onchange" onsubmit="SetParticipantValues();return false;"   /> 
+                                    </apex:selectList> 
+                                </td>
+                                <td class="dataCell" style="width:25%"> 
+                                    {!record.name}
+                                    &nbsp;
+                                </td>
+                                <td class="dataCell" style="width:25%"> 
+                                    {!record.email}
+                                    &nbsp;
+                                </td>
+                                <td class="dataCell" style="width:20%"> 
+                                    {!record.objecttype}
+                                    &nbsp;
+                                </td>
+                            </tr>
+                        </apex:repeat>
+                    </tbody>
+                </table>
+            </div>
+            <div class="pbBottomButtons">
+                <table border="0" cellpadding="0" cellspacing="0">
+                    <tbody>
+                        <tr>
+                            <td class="pbTitle">&nbsp;</td>
+                            <td   class="pbButtonb">
+                                
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</apex:component>

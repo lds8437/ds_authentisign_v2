@@ -1,0 +1,23 @@
+<apex:page lightningStylesheets="true" showHeader="true" showQuickActionVfHeader="false" sidebar="true"  standardStylesheets="false" >
+    <apex:includeLightning />
+    <div  id="compContainer" />
+    
+    <script>
+    
+         $Lightning.use("authentisign:DocumentSignerApp", function() {
+             $Lightning.createComponent("authentisign:AuthentiSignDocumentSigners",
+                 {quoteId:"{!$CurrentPage.parameters.quoteid}", documentId :"{!$CurrentPage.parameters.documentid}", documentName: "{!$CurrentPage.parameters.documentname}", objectName : "{!$CurrentPage.parameters.objectname}", VfPageMethod:getMessageFromComp },
+                 "compContainer",
+                 function(cmp) {
+              		console.log("c:VFPageApp loaded successfully in VF page");
+                 }
+             );
+         });
+    	function getMessageFromComp(compMsg)
+    	{
+            //alert(compMsg);
+            window.top.location.href = '/{!$CurrentPage.parameters.quoteid}';
+        }	
+      </script>
+      
+</apex:page>

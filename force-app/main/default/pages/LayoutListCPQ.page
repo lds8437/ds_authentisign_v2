@@ -1,0 +1,52 @@
+<apex:page standardController="SBQQ__Quote__c" extensions="LayoutListVFController" >
+    <apex:form id="layoutForm" >
+        
+        <apex:actionFunction name="GeneratePDFClient" action="{!GeneratePDF}"  status="status"  oncomplete="displayPDF('{!attachmentId}');" />
+        <apex:actionFunction name="GenerateDocumentPDFClient" action="{!GenerateDocumentPDF}"  status="status"  oncomplete="displayDocumentPDF('{!documentAttachmentId}');" />
+        <apex:actionFunction name="GotoMappingsClient" action="{!GotoMappings}" reRender="layoutForm,pnlLayout,pnlMapping,pnlDocument"  />
+        <apex:actionFunction name="GotoSignersClient" action="{!GotoSignersLayout}" reRender="layoutForm,pnlLayout,pnlMapping,pnlDocument"  />
+        <apex:actionFunction name="BackToLayoutClient" action="{!BackToLayout}" reRender="layoutForm,pnlLayout,pnlMapping,pnlDocument" />
+        <apex:actionFunction name="AddSignersClient" action="{!AddSigners}" reRender="layoutForm,pnlLayout,pnlMapping,pnlDocument" />
+        <apex:actionFunction name="SetFieldValues" action="{!SetFieldValues}" reRender="layoutForm" />
+        <apex:actionFunction name="SetParticipantValues" action="{!SetParticipantValues}" reRender="layoutForm" />
+        <apex:actionFunction name="Submit" action="{!Submit}" reRender="layoutForm" />
+        <apex:actionFunction name="SubmitSignersClient" action="{!SubmitSigners}" reRender="layoutForm,pnlLayout,pnlMapping,pnlDocument" />
+        <apex:actionFunction name="DeleteSigner" action="{!DeleteSigner}" reRender="layoutForm,pnlLayout,pnlMapping,pnlDocument" >
+        	<apex:param name="rowIndex"  value=""/>
+        </apex:actionFunction>
+        <apex:actionFunction name="refreshParent"  reRender="layoutForm" />
+        
+        <apex:outputPanel layout="none" rendered="{!showLayoutPage == true}" id="pnlLayout">
+            <c:LayoutComponent Layouts="{!Layouts}" 
+                               selectedLayout="{!selectedLayout}" 
+                               savedLayoutId="{!savedLayoutId}" 
+                               signingStatus="{!signingStatus}" 
+                               attachmentId="{!attachmentId}"
+                               documents="{!documents}"
+                               selectedDocument="{!selectedDocument}"
+                               documentSigningId="{!documentSigningId}"
+                               documentSigningStatus="{!documentSigningStatus}"
+                               documentLink="{!documentLink}"
+                               selectOptions="{!selectOptions}"
+                               selectedOption="{!selectedOption}"
+                               documentAttachmentId="{!documentAttachmentId}"
+                               />
+        </apex:outputPanel>
+        <apex:outputPanel layout="none" rendered="{!AND(showLayoutPage == false, selectedOption == 'Layout') }" id="pnlMapping">
+            <c:MappingComponent SelectOptionQuote="{!SelectOptionQuote}" 
+                                SelectOptionQuoteLI="{!SelectOptionQuoteLI}" 
+                                SelectOptionLIRecords="{!SelectOptionLIRecords}"
+                                SelectOptionUserContact="{!SelectOptionUserContact}"
+                                MappingValues="{!MappingValues}"  
+                                ParticipantMappingValues="{!ParticipantMappingValues}"
+                                />
+        </apex:outputPanel>
+        
+        <apex:outputPanel layout="none" rendered="{!AND(showLayoutPage == false, selectedOption == 'Document') }" id="pnlDocument">
+            <c:DocumentComponent SelectOptionUserContact="{!SelectOptionUserContact}"
+                                 ParticipantMappingValues="{!ParticipantMappingValues}"
+                                 documentSigningStatus="{!documentSigningStatus}"
+                                 />
+        </apex:outputPanel>
+    </apex:form>     
+</apex:page>
