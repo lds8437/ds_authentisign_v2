@@ -202,25 +202,25 @@ public with sharing class LayoutListVFController {
         //Get saved authentisign quote field values
         if(response.quote != null)
         {
-            if(response.quote.get('authentisign__Layout_Id__c') != null){
-                selectedLayout = (string)response.quote.get('authentisign__Layout_Id__c');
+            if(response.quote.get('Layout_Id__c') != null){
+                selectedLayout = (string)response.quote.get('Layout_Id__c');
                 savedLayoutId = selectedLayout;
             }
-            if(response.quote.get('authentisign__AttachmentId__c') != null){
-                attachmentId = string.valueOf( response.quote.get('authentisign__AttachmentId__c'));
+            if(response.quote.get('AttachmentId__c') != null){
+                attachmentId = string.valueOf( response.quote.get('AttachmentId__c'));
             }
-            if(response.quote.get('authentisign__Signing_Id__c') != null){
-                signingId = string.valueOf(response.quote.get('authentisign__Signing_Id__c'));
+            if(response.quote.get('Signing_Id__c') != null){
+                signingId = string.valueOf(response.quote.get('Signing_Id__c'));
             }
-            if(response.quote.get('authentisign__Document_Id__c') != null){
-                selectedDocument = string.valueOf(response.quote.get('authentisign__Document_Id__c'));
+            if(response.quote.get('Document_Id__c') != null){
+                selectedDocument = string.valueOf(response.quote.get('Document_Id__c'));
             }
-            if(response.quote.get('authentisign__Document_Signing_Id__c') != null){
-                documentSigningId = string.valueOf(response.quote.get('authentisign__Document_Signing_Id__c'));
+            if(response.quote.get('Document_Signing_Id__c') != null){
+                documentSigningId = string.valueOf(response.quote.get('Document_Signing_Id__c'));
             }
-            if(response.quote.get('authentisign__Document_Attachment_Id__c') != null)
+            if(response.quote.get('Document_Attachment_Id__c') != null)
             {
-                documentAttachmentId = string.valueOf(response.quote.get('authentisign__Document_Attachment_Id__c'));
+                documentAttachmentId = string.valueOf(response.quote.get('Document_Attachment_Id__c'));
             }
         }
     }

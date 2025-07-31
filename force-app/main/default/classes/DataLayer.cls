@@ -2,9 +2,10 @@
 *********************************************************
 @Apex Class Name    : DataLayer
 @Created Date       : Dec 05, 2023
-@description        : class to get the data with soql queries
+@description        : Class to get data with SOQL queries
 @author             : FFD Developer
 @Modification Log   : 
+  - Updated July 31, 2025: Added try-catch with AuraHandledException for UI compatibility. Added field validation in getRecordById. Confirmed no CPQ dependencies; supports Opportunity.
 *********************************************************
 */
 public with sharing class DataLayer {
@@ -12,196 +13,194 @@ public with sharing class DataLayer {
     /*
     *********************************************************
     @Method Name    : getSetting
-    @description    : get the authentisign setting to request authentisign api
-    @param          : N/A
-    @return         : authentisign__Setting__c 
+    @description    : Get the Authentisign setting for API requests
+    @param          : None
+    @return         : Setting__c
     ********************************************************
     */
-    public static authentisign__Setting__c getSetting()
-    {
-        if (Schema.sObjectType.authentisign__Setting__c.fields.Id.isAccessible() &&
-            Schema.sObjectType.authentisign__Setting__c.fields.Name.isAccessible() &&
-            Schema.sObjectType.authentisign__Setting__c.fields.authentisign__Account_Id__c.isAccessible() &&
-            Schema.sObjectType.authentisign__Setting__c.fields.authentisign__Bearer_Token__c.isAccessible() &&
-            Schema.sObjectType.authentisign__Setting__c.fields.authentisign__Callback_Url__c.isAccessible() &&
-            Schema.sObjectType.authentisign__Setting__c.fields.authentisign__Endpoint__c.isAccessible()
-           ) 
-        {
-            authentisign__Setting__c[] settings = [Select Id, Name, authentisign__Account_Id__c, authentisign__Bearer_Token__c, authentisign__Callback_Url__c, authentisign__Endpoint__c from authentisign__Setting__c limit 1];
-            if(settings.size() > 0)
-            {
-                return settings[0];
+    public static Setting__c getSetting() {
+        try {
+            if (Schema.sObjectType.Setting__c.fields.Id.isAccessible() &&
+                Schema.sObjectType.Setting__c.fields.Name.isAccessible() &&
+                Schema.sObjectType.Setting__c.fields.Account_Id__c.isAccessible() &&
+                Schema.sObjectType.Setting__c.fields.Bearer_Token__c.isAccessible() &&
+                Schema.sObjectType.Setting__c.fields.Callback_Url__c.isAccessible() &&
+                Schema.sObjectType.Setting__c.fields.Endpoint__c.isAccessible()) {
+                Setting__c[] settings = [SELECT Id, Name, Account_Id__c, Bearer_Token__c, Callback_Url__c, Endpoint__c 
+                                         FROM Setting__c LIMIT 1];
+                return settings.isEmpty() ? null : settings[0];
             }
-            else{
-                return null;
-            }
+            throw new AuraHandledException('Insufficient permissions to access Setting__c fields.');
+        } catch (Exception e) {
+            System.debug(LoggingLevel.ERROR, 'Error retrieving Setting__c: ' + e.getMessage());
+            throw new AuraHandledException('Error retrieving settings: ' + e.getMessage());
         }
-        else{
-            return null;
-        }
-    }	
-    
+    }
+
     /*
     *********************************************************
-    @Method Name    : getQuoteById
-    @description    : get Quote record by Id and Object name (Quote, CPQ Quote)
-    @param          : string recordId, string sObjectName
+    @Method Name    : getRecordById
+    @description    : Get record by Id and object name
+    @param          : String recordId, String sObjectName
     @return         : SObject
     ********************************************************
     */
-    public static SObject getQuoteById(string recordId, string sObjectName)
-    {
-        Map<String, Schema.SObjectField> SOBjectFieldfMap = Schema.getGlobalDescribe().get(sObjectName.toLowerCase()).getDescribe().Fields.getMap();
-        
-        Schema.DescribeFieldResult idFD = SOBjectFieldfMap.get('Id').getDescribe();
-        Schema.DescribeFieldResult nameFD = SOBjectFieldfMap.get('Name').getDescribe();
-        Schema.DescribeFieldResult layoutIdFD = SOBjectFieldfMap.get('authentisign__Layout_Id__c').getDescribe();
-        Schema.DescribeFieldResult signingIdFD = SOBjectFieldfMap.get('authentisign__Signing_Id__c').getDescribe();
-        Schema.DescribeFieldResult statusFD = SOBjectFieldfMap.get('authentisign__Authsign_Status__c').getDescribe();
-        Schema.DescribeFieldResult attachmentIdFD = SOBjectFieldfMap.get('authentisign__AttachmentId__c').getDescribe();
-        Schema.DescribeFieldResult documentIdFD = SOBjectFieldfMap.get('authentisign__Document_Id__c').getDescribe();
-        Schema.DescribeFieldResult documentSigningIdFD = SOBjectFieldfMap.get('authentisign__Document_Signing_Id__c').getDescribe();
-        Schema.DescribeFieldResult documentAttachIdFD = SOBjectFieldfMap.get('authentisign__Document_Attachment_Id__c').getDescribe();
-        Schema.DescribeFieldResult documentStatusFD = SOBjectFieldfMap.get('authentisign__Authsign_Document_Status__c').getDescribe();
+    public static SObject getRecordById(String recordId, String sObjectName) {
+        try {
+            Map<String, Schema.SObjectField> fieldMap = Schema.getGlobalDescribe().get(sObjectName.toLowerCase()).getDescribe().fields.getMap();
+            if (fieldMap == null) {
+                throw new AuraHandledException('Invalid SObject: ' + sObjectName);
+            }
 
-        
-        if(idFD.isAccessible() &&
-           nameFD.isAccessible() &&
-           layoutIdFD.isAccessible() &&
-           signingIdFD.isAccessible() &&
-           statusFD.isAccessible() &&
-           attachmentIdFD.isAccessible() &&
-           documentIdFD.isAccessible() &&
-           documentSigningIdFD.isAccessible() &&
-           documentAttachIdFD.isAccessible() &&
-           documentStatusFD.isAccessible()
-          )
-        {
-            sObject quoteObject =  Database.query('Select Id,Name, authentisign__Layout_Id__c, authentisign__Signing_Id__c, authentisign__Authsign_Status__c, authentisign__AttachmentId__c,'+
-                                                  ' authentisign__Document_Attachment_Id__c, authentisign__Authsign_Document_Status__c, authentisign__Document_Id__c, authentisign__Document_Signing_Id__c from ' + sObjectName + ' where Id = \''+recordId+'\' ');
-            return quoteObject; 
-        }else{
-            return null;
+            List<String> fields = new List<String>{'Id', 'Name', 'Layout_Id__c', 'Signing_Id__c', 'Authsign_Status__c', 
+                                                  'AttachmentId__c', 'Document_Attachment_Id__c', 'Authsign_Document_Status__c', 
+                                                  'Document_Id__c', 'Document_Signing_Id__c'};
+            List<String> accessibleFields = new List<String>();
+            for (String field : fields) {
+                if (fieldMap.containsKey(field.toLowerCase()) && fieldMap.get(field.toLowerCase()).getDescribe().isAccessible()) {
+                    accessibleFields.add(field);
+                }
+            }
+
+            if (accessibleFields.isEmpty()) {
+                throw new AuraHandledException('No accessible fields for SObject: ' + sObjectName);
+            }
+
+            String query = 'SELECT ' + String.join(accessibleFields, ',') + ' FROM ' + String.escapeSingleQuotes(sObjectName) + 
+                          ' WHERE Id = \'' + String.escapeSingleQuotes(recordId) + '\' LIMIT 1';
+            return Database.query(query);
+        } catch (Exception e) {
+            System.debug(LoggingLevel.ERROR, 'Error querying record: ' + e.getMessage());
+            throw new AuraHandledException('Error retrieving record: ' + e.getMessage());
         }
     }
-    
+
     /*
     *********************************************************
     @Method Name    : getLayoutMappings
-    @description    : get saved layout mappings for requested layout
-    @param          : string layoutId, string objectName
-    @return         : string (json mapping strings)
+    @description    : Get saved layout mappings for requested layout
+    @param          : String layoutId, String objectName
+    @return         : String (JSON mapping strings)
     ********************************************************
     */
-    public static string getLayoutMappings(string layoutId, string objectName)
-    {
-        string jsonLayoutMappings = '';// '{"fieldsMap":{"Product":{"object":"lineitem","field":"CreatedById","lineItemId":"0QLHn000007DT0DOAW"},"AgentNumber":{"object":"quote","field":"AccountId"},"Test Field 1":{"object":"lineitem","field":"CreatedById","lineItemId":"0QLHn000007DT0EOAW"}},"rolesMap":{"buyer":"OwnerId","Seller":"ContactId"}}';
-        
-        if (Schema.sObjectType.authentisign__Layout_Mapping__c.fields.Id.isAccessible() &&
-            Schema.sObjectType.authentisign__Layout_Mapping__c.fields.authentisign__Layout_Id__c.isAccessible() &&
-            Schema.sObjectType.authentisign__Layout_Mapping__c.fields.authentisign__Mapping__c.isAccessible() &&
-            Schema.sObjectType.authentisign__Layout_Mapping__c.fields.authentisign__Layout_Id__c.isAccessible() &&
-            Schema.sObjectType.authentisign__Layout_Mapping__c.fields.authentisign__Object__c.isAccessible() &&
-            Schema.sObjectType.authentisign__Layout_Mapping__c.fields.authentisign__Unique_Id__c.isAccessible()  
-           ) 
-        {
-            authentisign__Layout_Mapping__c[] layouts = [Select Id, authentisign__Layout_Id__c, authentisign__Mapping__c from authentisign__Layout_Mapping__c
-                                                         where authentisign__Layout_Id__c =: layoutId and authentisign__Object__c =: objectName];
-            if(layouts.size() > 0)
-            {
-                jsonLayoutMappings = layouts[0].authentisign__Mapping__c;
-            }
-        }
-        return jsonLayoutMappings;
-    }
-    
-    public static Map<string,string> getDocuments(string recordId, string objectName)
-    {
-        Map<string,string> resultMap = new Map<string,string>();
-        if(objectName == 'SBQQ__Quote__c')
-        {
-            if (Schema.sObjectType.SBQQ__QuoteDocument__c.fields.Id.isAccessible() &&
-                Schema.sObjectType.SBQQ__QuoteDocument__c.fields.Name.isAccessible() &&
-                Schema.sObjectType.SBQQ__QuoteDocument__c.fields.SBQQ__DocumentId__c.isAccessible() &&
-                Schema.sObjectType.SBQQ__QuoteDocument__c.fields.SBQQ__Quote__c.isAccessible()
-               ) 
-            {
-                for(SBQQ__QuoteDocument__c  doc : [Select Id,Name,SBQQ__DocumentId__c from SBQQ__QuoteDocument__c where SBQQ__Quote__c =: recordId])
-                {
-                    resultMap.put(doc.Name,doc.SBQQ__DocumentId__c);
+    public static String getLayoutMappings(String layoutId, String objectName) {
+        try {
+            String jsonLayoutMappings = '';
+            if (Schema.sObjectType.Layout_Mapping__c.fields.Id.isAccessible() &&
+                Schema.sObjectType.Layout_Mapping__c.fields.Layout_Id__c.isAccessible() &&
+                Schema.sObjectType.Layout_Mapping__c.fields.Mapping__c.isAccessible() &&
+                Schema.sObjectType.Layout_Mapping__c.fields.Object__c.isAccessible() &&
+                Schema.sObjectType.Layout_Mapping__c.fields.Unique_Id__c.isAccessible()) {
+                Layout_Mapping__c[] layouts = [SELECT Id, Layout_Id__c, Mapping__c 
+                                              FROM Layout_Mapping__c 
+                                              WHERE Layout_Id__c = :layoutId AND Object__c = :objectName LIMIT 1];
+                if (!layouts.isEmpty()) {
+                    jsonLayoutMappings = layouts[0].Mapping__c;
                 }
             }
+            return jsonLayoutMappings;
+        } catch (Exception e) {
+            System.debug(LoggingLevel.ERROR, 'Error retrieving layout mappings: ' + e.getMessage());
+            throw new AuraHandledException('Error retrieving layout mappings: ' + e.getMessage());
         }
-        else
-        {
-             if (Schema.sObjectType.ContentDocumentLink.fields.Id.isAccessible() &&
-                 Schema.sObjectType.ContentDocumentLink.fields.LinkedEntityId.isAccessible() &&
-                 Schema.sObjectType.ContentDocumentLink.fields.ContentDocumentId.isAccessible() &&
-                 Schema.sObjectType.ContentVersion.fields.ContentDocumentId.isAccessible() &&
-                 Schema.sObjectType.ContentVersion.fields.Id.isAccessible() &&
-                 Schema.sObjectType.ContentVersion.fields.Title.isAccessible()
-               ) 
-             {
-                 List<Id> contentDocIds = new List<Id>();
-                 for(ContentDocumentLink cdlink : [SELECT Id, LinkedEntityId, ContentDocumentId FROM ContentDocumentLink where LinkedEntityId =: recordId])
-                 {
-                     contentDocIds.add(cdlink.ContentDocumentId);
-                 }
-                 for(ContentVersion ver : [SELECT Id, Title FROM ContentVersion where ContentDocumentId =: contentDocIds])
-                 {
-                     resultMap.put(ver.Title,ver.Id);
-                 }
-             }
-        }
-        return resultMap;
     }
-    
-    public static blob getDocumentById(string documentId, string objectName)
-    {
-        blob result = null;
-        if(objectName == 'SBQQ__Quote__c')
-        {
-            if (Schema.sObjectType.Document.fields.Id.isAccessible() &&
-                Schema.sObjectType.Document.fields.Body.isAccessible()
-               ) 
-            {
-                 result = [SELECT Id,Body FROM Document where Id=:documentId limit 1].Body;
+
+    /*
+    *********************************************************
+    @Method Name    : getDocuments
+    @description    : Get documents associated with a record
+    @param          : String recordId, String objectName
+    @return         : Map<String,String> (Document Title to Id)
+    ********************************************************
+    */
+    public static Map<String,String> getDocuments(String recordId, String objectName) {
+        try {
+            Map<String,String> resultMap = new Map<String,String>();
+            if (Schema.sObjectType.ContentDocumentLink.fields.Id.isAccessible() &&
+                Schema.sObjectType.ContentDocumentLink.fields.LinkedEntityId.isAccessible() &&
+                Schema.sObjectType.ContentDocumentLink.fields.ContentDocumentId.isAccessible() &&
+                Schema.sObjectType.ContentVersion.fields.ContentDocumentId.isAccessible() &&
+                Schema.sObjectType.ContentVersion.fields.Id.isAccessible() &&
+                Schema.sObjectType.ContentVersion.fields.Title.isAccessible()) {
+                List<Id> contentDocIds = new List<Id>();
+                for (ContentDocumentLink cdLink : [SELECT Id, LinkedEntityId, ContentDocumentId 
+                                                  FROM ContentDocumentLink 
+                                                  WHERE LinkedEntityId = :recordId]) {
+                    contentDocIds.add(cdLink.ContentDocumentId);
+                }
+                for (ContentVersion ver : [SELECT Id, Title 
+                                           FROM ContentVersion 
+                                           WHERE ContentDocumentId IN :contentDocIds]) {
+                    resultMap.put(ver.Title, ver.Id);
+                }
             }
+            return resultMap;
+        } catch (Exception e) {
+            System.debug(LoggingLevel.ERROR, 'Error retrieving documents: ' + e.getMessage());
+            throw new AuraHandledException('Error retrieving documents: ' + e.getMessage());
         }
-        else
-        {
-             if (Schema.sObjectType.ContentVersion.fields.Id.isAccessible() &&
-                 Schema.sObjectType.ContentVersion.fields.VersionData.isAccessible()
-               ) 
-             {
-                 result = [SELECT Id, VersionData FROM ContentVersion where Id =: documentId limit 1].VersionData;
-             }
-        }
-        return result;
     }
-     
-    
-    public static string getAttachmentId(string recordId, string sObjectName, boolean isLayout)
-    {
-        string attachmentId = '';
-        
-        Map<String, Schema.SObjectField> SOBjectFieldfMap = Schema.getGlobalDescribe().get(sObjectName.toLowerCase()).getDescribe().Fields.getMap();
-        Schema.DescribeFieldResult idFD = SOBjectFieldfMap.get('Id').getDescribe();
-        Schema.DescribeFieldResult attachmentIdFD = SOBjectFieldfMap.get('authentisign__AttachmentId__c').getDescribe();
-        Schema.DescribeFieldResult docAttachmentIdFD = SOBjectFieldfMap.get('authentisign__Document_Attachment_Id__c').getDescribe();
-        
-        
-        if(idFD.isAccessible() && attachmentIdFD.isAccessible() && docAttachmentIdFD.isAccessible())
-        {
-            sObject quoteObject =  Database.query('Select Id, authentisign__AttachmentId__c, authentisign__Document_Attachment_Id__c  from ' + sObjectName + ' where Id = \''+recordId+'\' ');
-            
-            if(isLayout)
-                attachmentId =  quoteObject.get('authentisign__AttachmentId__c') == null ? '' : (string)quoteObject.get('authentisign__AttachmentId__c') ;
-            else
-                attachmentId =  quoteObject.get('authentisign__Document_Attachment_Id__c') == null ? '' : (string)quoteObject.get('authentisign__Document_Attachment_Id__c') ;
+
+    /*
+    *********************************************************
+    @Method Name    : getDocumentById
+    @description    : Get document content by Id
+    @param          : String documentId, String objectName
+    @return         : Blob
+    ********************************************************
+    */
+    public static Blob getDocumentById(String documentId, String objectName) {
+        try {
+            if (Schema.sObjectType.ContentVersion.fields.Id.isAccessible() &&
+                Schema.sObjectType.ContentVersion.fields.VersionData.isAccessible()) {
+                ContentVersion[] versions = [SELECT Id, VersionData 
+                                             FROM ContentVersion 
+                                             WHERE Id = :documentId LIMIT 1];
+                return versions.isEmpty() ? null : versions[0].VersionData;
+            }
+            throw new AuraHandledException('Insufficient permissions to access ContentVersion fields.');
+        } catch (Exception e) {
+            System.debug(LoggingLevel.ERROR, 'Error retrieving document: ' + e.getMessage());
+            throw new AuraHandledException('Error retrieving document: ' + e.getMessage());
         }
-        
-        
-        return attachmentId;
+    }
+
+    /*
+    *********************************************************
+    @Method Name    : getAttachmentId
+    @description    : Get attachment Id from record
+    @param          : String recordId, String sObjectName, Boolean isLayout
+    @return         : String (Attachment Id)
+    ********************************************************
+    */
+    public static String getAttachmentId(String recordId, String sObjectName, Boolean isLayout) {
+        try {
+            String attachmentId = '';
+            Map<String, Schema.SObjectField> fieldMap = Schema.getGlobalDescribe().get(sObjectName.toLowerCase()).getDescribe().fields.getMap();
+            if (fieldMap == null) {
+                throw new AuraHandledException('Invalid SObject: ' + sObjectName);
+            }
+
+            List<String> fields = new List<String>{'Id', 'AttachmentId__c', 'Document_Attachment_Id__c'};
+            List<String> accessibleFields = new List<String>();
+            for (String field : fields) {
+                if (fieldMap.containsKey(field.toLowerCase()) && fieldMap.get(field.toLowerCase()).getDescribe().isAccessible()) {
+                    accessibleFields.add(field);
+                }
+            }
+
+            if (accessibleFields.isEmpty()) {
+                throw new AuraHandledException('No accessible fields for SObject: ' + sObjectName);
+            }
+
+            String query = 'SELECT ' + String.join(accessibleFields, ',') + ' FROM ' + String.escapeSingleQuotes(sObjectName) + 
+                          ' WHERE Id = \'' + String.escapeSingleQuotes(recordId) + '\' LIMIT 1';
+            SObject record = Database.query(query);
+            attachmentId = isLayout ? (String)record.get('AttachmentId__c') : (String)record.get('Document_Attachment_Id__c');
+            return attachmentId == null ? '' : attachmentId;
+        } catch (Exception e) {
+            System.debug(LoggingLevel.ERROR, 'Error retrieving attachment Id: ' + e.getMessage());
+            throw new AuraHandledException('Error retrieving attachment Id: ' + e.getMessage());
+        }
     }
 }
