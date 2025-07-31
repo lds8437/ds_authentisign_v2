@@ -33,15 +33,15 @@
                 component.set("v.layouts", ddlData);
                 console.log(ddlData);
             
-            	component.set("v.selectedRecord", result.quote.authentisign__Layout_Id__c);
-                component.set("v.savedLayoutId", result.quote.authentisign__Layout_Id__c);
-                console.log(result.quote.authentisign__Layout_Id__c);
+            	component.set("v.selectedRecord", result.quote.Layout_Id__c);
+                component.set("v.savedLayoutId", result.quote.Layout_Id__c);
+                console.log(result.quote.Layout_Id__c);
                 
                 component.set("v.signingStatus", result.signingStatus);
                 component.set("v.documentSigningStatus", result.documentSigningStatus);
                 
-                component.set("v.attachmentId", result.quote.authentisign__AttachmentId__c);
-                component.set("v.documentAttachmentId", result.quote.authentisign__Document_Attachment_Id__c);
+                component.set("v.attachmentId", result.quote.AttachmentId__c);
+                component.set("v.documentAttachmentId", result.quote.Document_Attachment_Id__c);
                 component.set("v.quote", result.quote);
                 
                
@@ -62,7 +62,7 @@
                     }
                 }
                 */
-                this.populateDocuments(component, result.documents, result.quote.authentisign__Document_Id__c, result.quote.authentisign__Document_Signing_Id__c);
+                this.populateDocuments(component, result.documents, result.quote.Document_Id__c, result.quote.Document_Signing_Id__c);
                 //component.find("ddlLayout").set("v.value", result.quote.Layout_Id__c);
             }
             else if (state === "INCOMPLETE") {
@@ -224,7 +224,7 @@
             var  quote = component.get("v.quote");
             console.log(quote);
             
-            var params = { quoteId : quote.Id, signingId : quote.authentisign__Signing_Id__c, objectName : component.get("v.sObjectName"), isLayout : true };
+            var params = { quoteId : quote.Id, signingId : quote.Signing_Id__c, objectName : component.get("v.sObjectName"), isLayout : true };
             console.log(params);
             
             var action = component.get("c.saveAttachment");
@@ -277,7 +277,7 @@
             var  quote = component.get("v.quote");
             console.log(quote);
             
-            var params = { quoteId : quote.Id, signingId : quote.authentisign__Document_Signing_Id__c, objectName : component.get("v.sObjectName"), isLayout : false };
+            var params = { quoteId : quote.Id, signingId : quote.Document_Signing_Id__c, objectName : component.get("v.sObjectName"), isLayout : false };
             console.log(params);
             
             var action = component.get("c.saveAttachment");

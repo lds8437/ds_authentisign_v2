@@ -14,11 +14,11 @@ private class LayoutListVFControllerTest {
         
         ContentVersion contentVersion_2 = [SELECT Id, Title, ContentDocumentId FROM ContentVersion WHERE Id = :contentVersion_1.Id LIMIT 1];
         
-        authentisign__Setting__c setting = new authentisign__Setting__c();
-        setting.authentisign__Account_Id__c = '66767a4f-329b-4acb-89ad-5f7bb31af7fd';
-        setting.authentisign__Bearer_Token__c = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiIyODNDRjIyNC0zRkJBLTQ1OUItQTdCMy0wOTk1OEUyMEY0MTciLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9zaWQiOiI0MEQxNEM3QS1GNjExLUVFMTEtQTlCQi0wMDBEM0ExMzZBQTciLCJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyLCJhdWQiOiJhdXRoZW50aXNpZ25fZXh0ZXJuYWwiLCJpc3MiOiJhdXRoZW50aXNpZ24iLCJleHAiOjE3MTYyMzkwMjIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL3N5c3RlbSI6IkV4dGVybmFsIn0.TLKQR-WYnHYkf6nq2pxa2pb8m4rpU5hPf7vvgmi32M4';
-        setting.authentisign__Callback_Url__c = 'https://lonewolf5-dev-ed.develop.my.salesforce-sites.com/services/apexrest/authentisign/callback';
-        setting.authentisign__Endpoint__c = 'https://api.pre.authentisign.com';
+        Setting__c setting = new Setting__c();
+        setting.Account_Id__c = '66767a4f-329b-4acb-89ad-5f7bb31af7fd';
+        setting.Bearer_Token__c = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiIyODNDRjIyNC0zRkJBLTQ1OUItQTdCMy0wOTk1OEUyMEY0MTciLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9zaWQiOiI0MEQxNEM3QS1GNjExLUVFMTEtQTlCQi0wMDBEM0ExMzZBQTciLCJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyLCJhdWQiOiJhdXRoZW50aXNpZ25fZXh0ZXJuYWwiLCJpc3MiOiJhdXRoZW50aXNpZ24iLCJleHAiOjE3MTYyMzkwMjIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL3N5c3RlbSI6IkV4dGVybmFsIn0.TLKQR-WYnHYkf6nq2pxa2pb8m4rpU5hPf7vvgmi32M4';
+        setting.Callback_Url__c = 'https://lonewolf5-dev-ed.develop.my.salesforce-sites.com/services/apexrest/authentisign/callback';
+        setting.Endpoint__c = 'https://api.pre.authentisign.com';
         insert setting;
 
         List<Quote> lstQuote = new List<Quote>();
@@ -56,11 +56,11 @@ private class LayoutListVFControllerTest {
         item.UnitPrice  = 100;
         insert item;
         
-        authentisign__Layout_Mapping__c mapping = new authentisign__Layout_Mapping__c();
-        mapping.authentisign__Layout_Id__c = '58193357-8337-ee11-a3f1-000d3a1d5b2d';
-        mapping.authentisign__Object__c = 'Quote';
-        mapping.authentisign__Mapping__c = '{"rolesMap":{"Seller":null,"buyer":"OwnerId"},"fieldsMap":{"Test Field 1":{"lineItemId":"'+item.Id+'","object":"lineitem","field":"CreatedById"},"AgentNumber":{"lineItemId":"'+item.Id+'","object":"lineitem","field":"CreatedById"},"Product":{"object":"quote","field":"Id"}}}';
-        mapping.authentisign__Unique_Id__c = '58193357-8337-ee11-a3f1-000d3a1d5b2dQuote';
+        Layout_Mapping__c mapping = new Layout_Mapping__c();
+        mapping.Layout_Id__c = '58193357-8337-ee11-a3f1-000d3a1d5b2d';
+        mapping.Object__c = 'Quote';
+        mapping.Mapping__c = '{"rolesMap":{"Seller":null,"buyer":"OwnerId"},"fieldsMap":{"Test Field 1":{"lineItemId":"'+item.Id+'","object":"lineitem","field":"CreatedById"},"AgentNumber":{"lineItemId":"'+item.Id+'","object":"lineitem","field":"CreatedById"},"Product":{"object":"quote","field":"Id"}}}';
+        mapping.Unique_Id__c = '58193357-8337-ee11-a3f1-000d3a1d5b2dQuote';
         insert mapping;
         
         ContentDocumentLink contentlink = new ContentDocumentLink();
@@ -74,7 +74,7 @@ private class LayoutListVFControllerTest {
 	@IsTest
     private static void unittestgetlayouts()
     {
-        Quote quot = [Select Id,Name, authentisign__Layout_Id__c, authentisign__Signing_Id__c, authentisign__Authsign_Status__c, authentisign__AttachmentId__c from Quote where Signing_Id__c != null  limit 1];
+        Quote quot = [Select Id,Name, Layout_Id__c, Signing_Id__c, Authsign_Status__c, AttachmentId__c from Quote where Signing_Id__c != null  limit 1];
         
         SingleRequestMock layoutResp = new SingleRequestMock(200,
                                                                   'Complete',
@@ -117,7 +117,7 @@ private class LayoutListVFControllerTest {
     @IsTest
     private static void unittestsigers()
     {
-        Quote quot = [Select Id,Name, authentisign__Layout_Id__c, authentisign__Signing_Id__c, authentisign__Authsign_Status__c, authentisign__AttachmentId__c  from Quote where Document_Signing_Id__c != null limit 1];
+        Quote quot = [Select Id,Name, Layout_Id__c, Signing_Id__c, Authsign_Status__c, AttachmentId__c  from Quote where Document_Signing_Id__c != null limit 1];
         
         ContentVersion content = [Select Id,Title from ContentVersion limit 1];
 
@@ -184,7 +184,7 @@ private class LayoutListVFControllerTest {
     @IsTest
     private static void unittestsubmitrequest()
     {
-        Quote quot = [Select Id,Name, authentisign__Layout_Id__c, authentisign__Signing_Id__c, authentisign__Authsign_Status__c, authentisign__AttachmentId__c from Quote limit 1];
+        Quote quot = [Select Id,Name, Layout_Id__c, Signing_Id__c, Authsign_Status__c, AttachmentId__c from Quote limit 1];
         
         /*
         SingleRequestMock layoutResp = new SingleRequestMock(200,

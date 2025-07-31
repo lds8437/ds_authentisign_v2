@@ -34,16 +34,16 @@ global with sharing class  AuthentiSignCallBack
          */
         string requestURI = JSON.serialize(RestContext.request.requestURI);
         
-        authentisign__Callback_Response__c callback = new authentisign__Callback_Response__c();
-        callback.authentisign__Params__c = params;
-        callback.authentisign__Headers__c = headers;
-        callback.authentisign__Body__c = body;
-        callback.authentisign__Uri__c = requestURI;
+        Callback_Response__c callback = new Callback_Response__c();
+        callback.Params__c = params;
+        callback.Headers__c = headers;
+        callback.Body__c = body;
+        callback.Uri__c = requestURI;
         
-        if (Schema.sObjectType.authentisign__Callback_Response__c.fields.authentisign__Params__c.isAccessible() &&
-            Schema.sObjectType.authentisign__Callback_Response__c.fields.authentisign__Headers__c.isAccessible() &&
-            Schema.sObjectType.authentisign__Callback_Response__c.fields.authentisign__Body__c.isAccessible() &&
-            Schema.sObjectType.authentisign__Callback_Response__c.fields.authentisign__Uri__c.isAccessible()
+        if (Schema.sObjectType.Callback_Response__c.fields.Params__c.isAccessible() &&
+            Schema.sObjectType.Callback_Response__c.fields.Headers__c.isAccessible() &&
+            Schema.sObjectType.Callback_Response__c.fields.Body__c.isAccessible() &&
+            Schema.sObjectType.Callback_Response__c.fields.Uri__c.isAccessible()
             ) {
             insert callback;
         }

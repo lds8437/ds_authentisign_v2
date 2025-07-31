@@ -1,532 +1,461 @@
 /*
 *********************************************************
-@Apex Class Name    : LayoutListHelper
+@Apex Class Name    : Utility
 @Created Date       : Jan 30, 2024
-@description        : Helper class for LayoutListCtrl class
+@description        : Helper class for Authentisign API calls, SObject field retrieval, and PDF attachment handling
 @author             : FFD Developer
 @Modification Log   : 
+  - Updated July 31, 2025: Removed CPQ dependencies, updated to support Opportunity. Added AuraEnabled annotations. Renamed ParticipientList to ParticipantList to match SObjectFieldPackage. Renamed quoteName to recordName in submitDocumentRequest. Fixed savePDFasAttachmentDocument to use ContentDocumentLink. Added consistent error handling and documentation.
 *********************************************************
 */
 public with sharing class Utility {
-    
+
     /*
     *********************************************************
     @Method Name    : getSetting
-    @description    : calls Data Layer class to get the setting record
-    @param          : N/A
-    @return         : authentisign__Setting__c 
+    @description    : Retrieve Authentisign settings from Setting__c
+    @param          : None
+    @return         : Setting__c
     ********************************************************
     */
-    public static authentisign__Setting__c getSetting()
-    {
-        return DataLayer.getSetting();
-    }	
-    
+    public static Setting__c getSetting() {
+        try {
+            return DataLayer.getSetting();
+        } catch (Exception e) {
+            System.debug(LoggingLevel.ERROR, 'Error retrieving Setting__c: ' + e.getMessage());
+            throw new AuraHandledException('Error retrieving settings: ' + e.getMessage());
+        }
+    }
+
     /*
     *********************************************************
     @Method Name    : createQueryParams
-    @description    : create query parameter for http request
-    @param          : Map<string,string> params
-    @return         : string  
+    @description    : Create query parameters for HTTP request
+    @param          : Map<String,String> params
+    @return         : String
     ********************************************************
     */
-    public static string createQueryParams(Map<string,string> params)
-    {
-        string result = '';
-        for(string key : params.keySet())
-        {
-            if(result == '')
-            {
-                result = key +'=' + params.get(key);
+    public static String createQueryParams(Map<String,String> params) {
+        try {
+            String result = '';
+            for (String key : params.keySet()) {
+                if (result == '') {
+                    result = key + '=' + EncodingUtil.urlEncode(params.get(key), 'UTF-8');
+                } else {
+                    result += '&' + key + '=' + EncodingUtil.urlEncode(params.get(key), 'UTF-8');
+                }
             }
-            else{
-                result += '&'+key +'=' + params.get(key);
-            }
+            return result;
+        } catch (Exception e) {
+            System.debug(LoggingLevel.ERROR, 'Error creating query params: ' + e.getMessage());
+            throw new AuraHandledException('Error creating query params: ' + e.getMessage());
         }
-        
-        return result;
     }
-    
+
     /*
     *********************************************************
     @Method Name    : sendHttpRequest
-    @description    : send http request to authentisign and get the response
-    @param          : string verb, string endpoint, map<string,string> headers, string token, string requestBody
-    @return         : string (response return from authentisign) 
+    @description    : Send HTTP request to Authentisign API
+    @param          : String verb, String endpoint, Map<String,String> headers, String token, String requestBody
+    @return         : String (response body)
     ********************************************************
     */
-    public static string sendHttpRequest(string verb, string endpoint, map<string,string> headers, string token, string requestBody)
-    {
-        HTTP h = new HTTP();
-        HTTPRequest r = new HTTPRequest();
-        
-        r.setEndpoint(endpoint);
-        r.settimeout(120000); /*Revert back if taking too long. Change made on MAY 09 2025 Due to Layouts callout taking more than 10 sec*/
-        
-        String authorizationHeader = 'Bearer ' + token;
-        
-        if(headers != null && headers.size() > 0)
-        {
-            for(string key : headers.keySet())
-            {
-                r.setHeader(key, headers.get(key));
+    public static String sendHttpRequest(String verb, String endpoint, Map<String,String> headers, String token, String requestBody) {
+        try {
+            Http h = new Http();
+            HttpRequest r = new HttpRequest();
+            r.setEndpoint(endpoint);
+            r.setTimeout(120000); // Timeout set to 120s per original code
+            r.setMethod(verb);
+
+            if (headers != null && !headers.isEmpty()) {
+                for (String key : headers.keySet()) {
+                    r.setHeader(key, headers.get(key));
+                }
             }
+
+            if (String.isNotBlank(requestBody)) {
+                r.setBody(requestBody);
+            }
+
+            System.debug('externalId: ' + r.getHeader('externalId'));
+            System.debug('Authorization: ' + r.getHeader('Authorization'));
+
+            HttpResponse resp = h.send(r);
+            String body = resp.getBody();
+            System.debug('response body: ' + body);
+
+            if (resp.getStatusCode() != 200 && resp.getStatusCode() != 201) {
+                throw new CalloutException('API call failed: ' + resp.getStatusCode() + ' ' + resp.getStatus());
+            }
+
+            return body;
+        } catch (Exception e) {
+            System.debug(LoggingLevel.ERROR, 'Error in sendHttpRequest: ' + e.getMessage());
+            throw new AuraHandledException('API call failed: ' + e.getMessage());
         }
-        r.setMethod(verb);
-        
-        if(!(requestBody == null || requestBody ==''))
-        {
-            r.setBody(requestBody);
-        }
-        
-        System.debug('externalId: '+r.getHeader('externalId'));
-        System.debug('Authorization: '+r.getHeader('Authorization'));
-        
-        HTTPResponse resp = h.send(r);
-        String body = resp.getBody();
-        System.debug('response body: '+ body);
-        
-        
-        return body;
     }
-    
+
     /*
     *********************************************************
     @Method Name    : sendHttpRequestBlob
-    @description    : send http request to authentisign and get the pdf response
-    @param          : string verb, string endpoint, map<string,string> headers, string token, string requestBody
-    @return         : PDFResponse (wrapper class) 
+    @description    : Send HTTP request to Authentisign and get PDF response
+    @param          : String verb, String endpoint, Map<String,String> headers, String token, String requestBody
+    @return         : PDFResponse
     ********************************************************
     */
-    public static PDFResponse sendHttpRequestBlob(string verb, string endpoint, map<string,string> headers, string token, string requestBody)
-    {
-        HTTP h = new HTTP();
-        HTTPRequest r = new HTTPRequest();
-        
-        r.setEndpoint(endpoint);
-        
-        String authorizationHeader = 'Bearer ' + token;
-        
-        if(headers != null && headers.size() > 0)
-        {
-            for(string key : headers.keySet())
-            {
-                r.setHeader(key, headers.get(key));
+    public static PDFResponse sendHttpRequestBlob(String verb, String endpoint, Map<String,String> headers, String token, String requestBody) {
+        try {
+            Http h = new Http();
+            HttpRequest r = new HttpRequest();
+            r.setEndpoint(endpoint);
+            r.setTimeout(120000);
+            r.setMethod(verb);
+
+            if (headers != null && !headers.isEmpty()) {
+                for (String key : headers.keySet()) {
+                    r.setHeader(key, headers.get(key));
+                }
             }
-        }
-        r.setMethod(verb);
-        
-        if(!(requestBody == null || requestBody ==''))
-        {
-            r.setBody(requestBody);
-        }
-        
-        System.debug('externalId: '+r.getHeader('externalId'));
-        System.debug('Authorization: '+r.getHeader('Authorization'));
-        
-        HTTPResponse resp = h.send(r);
-        
-        blob blobBody = resp.getBodyAsBlob();
-        System.debug('blobBody: '+blobBody);
-        
-        string stream = resp.getBody();
-        // System.debug('stream: '+stream);
-        
-        PDFResponse finalResult = new PDFResponse();
-        finalResult.pdfBlob = blobBody;
-        finalResult.pdfStream = stream;
-        
-        finalResult.fileName = '';
-        string contentDisposition = resp.getHeader('Content-Disposition');
-        
-        if(!(contentDisposition == null || contentDisposition == ''))
-        {
-            integer startIndex = contentDisposition.indexOf('filename=');
-            if(startIndex >= 0)
-            {
-                finalResult.fileName = contentDisposition.substring(startIndex + 'filename='.length(), contentDisposition.length());    
-                finalResult.fileName = EncodingUtil.urlDecode(finalResult.fileName,'UTF-8' );
+
+            if (String.isNotBlank(requestBody)) {
+                r.setBody(requestBody);
             }
+
+            System.debug('externalId: ' + r.getHeader('externalId'));
+            System.debug('Authorization: ' + r.getHeader('Authorization'));
+
+            HttpResponse resp = h.send(r);
+            Blob blobBody = resp.getBodyAsBlob();
+            System.debug('blobBody: ' + blobBody);
+
+            String stream = resp.getBody();
+            PDFResponse finalResult = new PDFResponse();
+            finalResult.pdfBlob = blobBody;
+            finalResult.pdfStream = stream;
+            finalResult.fileName = '';
+
+            String contentDisposition = resp.getHeader('Content-Disposition');
+            if (String.isNotBlank(contentDisposition)) {
+                Integer startIndex = contentDisposition.indexOf('filename=');
+                if (startIndex >= 0) {
+                    finalResult.fileName = contentDisposition.substring(startIndex + 'filename='.length());
+                    finalResult.fileName = EncodingUtil.urlDecode(finalResult.fileName, 'UTF-8');
+                }
+            }
+            System.debug('fileName: ' + finalResult.fileName);
+
+            return finalResult;
+        } catch (Exception e) {
+            System.debug(LoggingLevel.ERROR, 'Error in sendHttpRequestBlob: ' + e.getMessage());
+            throw new AuraHandledException('Error retrieving PDF: ' + e.getMessage());
         }
-        System.debug('fileName: '+ finalResult.fileName );
-        
-        return finalResult;
     }
-    
+
     /*
     *********************************************************
     @Method Name    : getPDFResponse
-    @description    : create the request and calls sendHttpRequestblob to get pdf response
-    @param          : string token, string accountId, string baseurl, string signingId, string siningmethod
-    @return         : PDFResponse (wrapper class) 
+    @description    : Create request and call sendHttpRequestBlob to get PDF response
+    @param          : String token, String accountId, String baseurl, String signingId, String signingMethod
+    @return         : PDFResponse
     ********************************************************
     */
-    public static PDFResponse getPDFResponse(string token, string accountId, string baseurl, string signingId, string siningmethod)
-    {        
-        Map<string,string> params = new Map<string,string>();
-        Map<string,string> headers = new Map<string,string>();
-        
-        //set params
-        params.put('language','en');
-        string queryParams = createQueryParams(params);
-        
-        
-        //set final endpoint
-        string requestMethod = '/api/v1/signings/'+signingId+'/documents/'+siningmethod;
-        string endpoint = baseurl + requestMethod + '?'+queryParams;
-        System.debug(endpoint);
-        
-         //set headers
-        headers.put('Authorization','Bearer '+token);
-        headers.put('Accept','*/*');
-        headers.put('externalId',accountId);
-        
-        PDFResponse responseResult = sendHttpRequestblob('GET',endpoint, headers, token, '');
-        
-        return responseResult;
+    public static PDFResponse getPDFResponse(String token, String accountId, String baseurl, String signingId, String signingMethod) {
+        try {
+            Map<String,String> params = new Map<String,String>();
+            params.put('language', 'en');
+            String queryParams = createQueryParams(params);
+
+            String requestMethod = '/api/v1/signings/' + signingId + '/documents/' + signingMethod;
+            String endpoint = baseurl + requestMethod + '?' + queryParams;
+            System.debug('endpoint: ' + endpoint);
+
+            Map<String,String> headers = new Map<String,String>();
+            headers.put('Authorization', 'Bearer ' + token);
+            headers.put('Accept', '*/*');
+            headers.put('externalId', accountId);
+
+            return sendHttpRequestBlob('GET', endpoint, headers, token, '');
+        } catch (Exception e) {
+            System.debug(LoggingLevel.ERROR, 'Error in getPDFResponse: ' + e.getMessage());
+            throw new AuraHandledException('Error retrieving PDF response: ' + e.getMessage());
+        }
     }
-    
+
     /*
     *********************************************************
     @Method Name    : getPDFLinkResponse
-    @description    : create the request and calls sendHttpRequest to get pdf link response
-    @param          : string token, string accountId, string baseurl, string signingId, string siningmethod
-    @return         : PDFResponse (wrapper class) 
+    @description    : Create request and call sendHttpRequest to get PDF link response
+    @param          : String token, String accountId, String baseurl, String signingId, String signingMethod
+    @return         : String
     ********************************************************
     */
-    public static string getPDFLinkResponse(string token, string accountId, string baseurl, string signingId, string siningmethod)
-    {        
-        Map<string,string> params = new Map<string,string>();
-        Map<string,string> headers = new Map<string,string>();
-        
-        //set params
-        params.put('language','en');
-        string queryParams = createQueryParams(params);
-        
-        
-        //set final endpoint
-        string requestMethod = '/api/v1/signings/'+signingId+'/documents/'+siningmethod;
-        string endpoint = baseurl + requestMethod + '?'+queryParams;
-        //System.debug(endpoint);
-        
-         //set headers
-        headers.put('Authorization','Bearer '+token);
-        headers.put('Accept','*/*');
-        headers.put('externalId',accountId);
-        
-        string responseResult = sendHttpRequest('GET',endpoint, headers, token, '');
-        
-        return responseResult;
+    public static String getPDFLinkResponse(String token, String accountId, String baseurl, String signingId, String signingMethod) {
+        try {
+            Map<String,String> params = new Map<String,String>();
+            params.put('language', 'en');
+            String queryParams = createQueryParams(params);
+
+            String requestMethod = '/api/v1/signings/' + signingId + '/documents/' + signingMethod;
+            String endpoint = baseurl + requestMethod + '?' + queryParams;
+
+            Map<String,String> headers = new Map<String,String>();
+            headers.put('Authorization', 'Bearer ' + token);
+            headers.put('Accept', '*/*');
+            headers.put('externalId', accountId);
+
+            return sendHttpRequest('GET', endpoint, headers, token, '');
+        } catch (Exception e) {
+            System.debug(LoggingLevel.ERROR, 'Error in getPDFLinkResponse: ' + e.getMessage());
+            throw new AuraHandledException('Error retrieving PDF link: ' + e.getMessage());
+        }
     }
-    
+
     /*
     *********************************************************
     @Method Name    : savePDFasAttachment
-    @description    : save the retrived pdf response as an attachment to requested record
-    @param          : string quoteId, string signingId, string pdfmethod, string objectName
-    @return         : string (Attachment Id) 
+    @description    : Save PDF as an Attachment to the record
+    @param          : String recordId, String signingId, String pdfMethod, String objectName
+    @return         : String (Attachment Id)
     ********************************************************
     */
-    public static string savePDFasAttachment(string quoteId, string signingId, string pdfmethod, string objectName)
-    {
-        string attachmentId = '';
-        System.debug('savePDFasAttachment: ');
-        authentisign__Setting__c setting = getSetting();
-        
-        if(setting != null)
-        {
-            try{
-                PDFResponse  pdfResponseObj = getPDFResponse(setting.authentisign__Bearer_Token__c, setting.authentisign__Account_Id__c, setting.authentisign__Endpoint__c, signingId, pdfmethod);
-                
-                System.debug('pdfResponseObj: '+ pdfResponseObj.fileName);
-                System.debug('pdfResponseObj: '+ pdfResponseObj);
-                
-                Attachment attach = new Attachment();
-                attach.name = pdfResponseObj.fileName;
-                attach.ParentId = quoteId;
-                attach.body = pdfResponseObj.pdfBlob;
-                attach.contenttype = 'application/pdf';
-                insert attach;
-                
-                attachmentId = attach.Id;
-                SObject qt = Schema.getGlobalDescribe().get(objectName).newSObject();
-                qt.put('Id',quoteId);
-                qt.put('authentisign__AttachmentId__c',attach.Id);
-                update qt;
+    @AuraEnabled
+    public static String savePDFasAttachment(String recordId, String signingId, String pdfMethod, String objectName) {
+        try {
+            Setting__c setting = getSetting();
+            if (setting == null) {
+                throw new AuraHandledException('Authentisign settings not found.');
             }
-            catch(Exception ex)
-            {
-                System.debug('error savePDFasAttachment: '+ ex.getMessage() +' , line: '+ex.getLineNumber());
-                attachmentId  = '';
-            }
+
+            PDFResponse pdfResponseObj = getPDFResponse(setting.Bearer_Token__c, setting.Account_Id__c, setting.Endpoint__c, signingId, pdfMethod);
+            System.debug('pdfResponseObj: ' + pdfResponseObj.fileName);
+
+            Attachment attach = new Attachment();
+            attach.Name = pdfResponseObj.fileName;
+            attach.ParentId = recordId;
+            attach.Body = pdfResponseObj.pdfBlob;
+            attach.ContentType = 'application/pdf';
+            insert attach;
+
+            SObject obj = Schema.getGlobalDescribe().get(objectName).newSObject();
+            obj.put('Id', recordId);
+            obj.put('AttachmentId__c', attach.Id);
+            update obj;
+
+            return attach.Id;
+        } catch (Exception e) {
+            System.debug(LoggingLevel.ERROR, 'Error in savePDFasAttachment: ' + e.getMessage() + ' at line: ' + e.getLineNumber());
+            throw new AuraHandledException('Error saving PDF as attachment: ' + e.getMessage());
         }
-        
-        return attachmentId;
     }
-    
+
     /*
     *********************************************************
     @Method Name    : savePDFasAttachmentDocument
-    @description    : save the retrived pdf response as an document attachment to requested record
-    @param          : string quoteId, string signingId, string pdfmethod, string objectName
-    @return         : string (Attachment Id) 
+    @description    : Save PDF as a ContentDocument linked to the record
+    @param          : String recordId, String signingId, String pdfMethod, String objectName
+    @return         : String (ContentDocument Id)
     ********************************************************
     */
-    public static string savePDFasAttachmentDocument(string quoteId, string signingId, string pdfmethod, string objectName)
-    {
-        string attachmentId = '';
-        
-        authentisign__Setting__c setting = getSetting();
-        
-        if(setting != null)
-        {
-            try{
-                PDFResponse  pdfResponseObj = getPDFResponse(setting.authentisign__Bearer_Token__c, setting.authentisign__Account_Id__c, setting.authentisign__Endpoint__c, signingId, pdfmethod);
-                
-                Attachment attach = new Attachment();
-                attach.name = pdfResponseObj.fileName;
-                attach.ParentId = quoteId;
-                attach.body = pdfResponseObj.pdfBlob;
-                attach.contenttype = 'application/pdf';
-                insert attach;
-                
-                attachmentId = attach.Id;
-                SObject qt = Schema.getGlobalDescribe().get(objectName).newSObject();
-                qt.put('Id',quoteId);
-                qt.put('authentisign__Document_Attachment_Id__c',attach.Id);
-                update qt;
+    @AuraEnabled
+    public static String savePDFasAttachmentDocument(String recordId, String signingId, String pdfMethod, String objectName) {
+        try {
+            Setting__c setting = getSetting();
+            if (setting == null) {
+                throw new AuraHandledException('Authentisign settings not found.');
             }
-            catch(Exception ex)
-            {
-                //System.debug('error savePDFasAttachment: '+ ex.getMessage() +' , line: '+ex.getLineNumber());
-                attachmentId  = '';
-            }
+
+            PDFResponse pdfResponseObj = getPDFResponse(setting.Bearer_Token__c, setting.Account_Id__c, setting.Endpoint__c, signingId, pdfMethod);
+            System.debug('pdfResponseObj: ' + pdfResponseObj.fileName);
+
+            ContentVersion cv = new ContentVersion(
+                Title = pdfResponseObj.fileName,
+                PathOnClient = pdfResponseObj.fileName,
+                VersionData = pdfResponseObj.pdfBlob,
+                ContentLocation = 'S'
+            );
+            insert cv;
+
+            ContentDocumentLink cdl = new ContentDocumentLink(
+                LinkedEntityId = recordId,
+                ContentDocumentId = [SELECT ContentDocumentId FROM ContentVersion WHERE Id = :cv.Id].ContentDocumentId,
+                ShareType = 'V'
+            );
+            insert cdl;
+
+            SObject obj = Schema.getGlobalDescribe().get(objectName).newSObject();
+            obj.put('Id', recordId);
+            obj.put('Document_Attachment_Id__c', cdl.ContentDocumentId);
+            update obj;
+
+            return cdl.ContentDocumentId;
+        } catch (Exception e) {
+            System.debug(LoggingLevel.ERROR, 'Error in savePDFasAttachmentDocument: ' + e.getMessage() + ' at line: ' + e.getLineNumber());
+            throw new AuraHandledException('Error saving PDF as document: ' + e.getMessage());
         }
-        
-        return attachmentId;
     }
-       
+
     /*
     *********************************************************
     @Method Name    : getSObjectFields
-    @description    : get fields schema information for quote and quote line items 
-    @param          : string objectName,string whereClause, string orderBy, string recordlimit
-    @return         : SObjectFieldPackage (Fields information) 
+    @description    : Get fields schema information for SObject and related items
+    @param          : String objectName, String whereClause, String orderBy, String recordLimit
+    @return         : SObjectFieldPackage
     ********************************************************
     */
-    public static SObjectFieldPackage getSObjectFields(string objectName,string whereClause, string orderBy, string recordlimit)
-    {
-        
-        SObjectFieldPackage wrapper = new SObjectFieldPackage();
-        
-        //string objectName = 'Quote';
-        Map<String, Schema.SObjectField> SOBjectFieldfMap = Schema.getGlobalDescribe().get(objectName.toLowerCase()).getDescribe().Fields.getMap();
-        
-        //SObject Describe Fields in the form of maps
-        Map<string, Map<string, string>> FieldProperties = new Map<string, map<string, string>>();
-        
-        //List of SObject Fields to be used in dyanamic query
-        List<string> SObjectQueryFieldsList = new List<string>();
-        
-        //List of Participents for Contact and User lookup Fields 
-        Map<string,List<string>> Participients = new Map<string,List<string>>();
-        
-        //Field Api Name Map of User and Contact on Quote Field
-        Map<string,string> UserContactFieldMap = new Map<string, string>();
-        
-        for(string key : SOBjectFieldfMap.keySet())
-        {
-            Schema.SObjectField field = SOBjectFieldfMap.get(key);
-            Schema.DescribeFieldResult fieldDescribe = field.getDescribe();
-            map<string, string> fieldMap = new Map<string,string>();
-            
-            string fieldName = fieldDescribe.getName();
-            if(fieldDescribe.isAccessible())
-            {
-                fieldMap.put('custom', string.valueOf(fieldDescribe.isCustom()) );
-                fieldMap.put('label',string.valueOf(fieldDescribe.getLabel()));
-                fieldMap.put('length',string.valueOf(fieldDescribe.getLength()));
-                fieldMap.put('localName',string.valueOf(fieldDescribe.getLocalName()));
-                fieldMap.put('name',string.valueOf(fieldName));
-                
-                string referenceTo = string.valueOf(fieldDescribe.getReferenceTo());
-                fieldMap.put('referenceTo', referenceTo);
-                
-                fieldMap.put('type',string.valueOf(fieldDescribe.getType()));
-                
-                FieldProperties.put(fieldName,fieldMap);
-                
-                SObjectQueryFieldsList.add(fieldName);
-                
-                if(fieldDescribe.getReferenceTo().size() > 0)
-                {
-                    //System.debug('fieldName: '+ fieldName + ' referenceTo: '+ (fieldDescribe.getReferenceTo().size() == 0));
-                    List<string> referenceFields = new List<string>();
-                    string lookupFieldName = '';
-                    if(fieldDescribe.isCustom() == true)
-                    {
-                        lookupFieldName = fieldName.replace('__c', '__r');
-                    }
-                    else{
-                        lookupFieldName = fieldName.replace('Id', '').replace('id', '');
-                    }
-                    
-                    if(lookupFieldName != '' )
-                    {
-                        if((referenceTo.toLowerCase().indexOf('contact') >= 0 || referenceTo.toLowerCase().indexOf('user') >= 0)  && !(key == 'createdbyid' || key == 'lastmodifiedbyid'))
-                        {
-                            //Add Id
-                            referenceFields.add('Id');
-                            
-                            //Add Name
-                            referenceFields.add('Name');
-                            SObjectQueryFieldsList.add(lookupFieldName+'.Name');
-                            
-                            //Add First Name
-                            referenceFields.add('FirstName');
-                            SObjectQueryFieldsList.add(lookupFieldName+'.FirstName');
-                            
-                            //Add Last Name
-                            referenceFields.add('LastName');
-                            SObjectQueryFieldsList.add(lookupFieldName+'.LastName');
-                            
-                            //Add Email
-                            referenceFields.add('Email');
-                            SObjectQueryFieldsList.add(lookupFieldName+'.Email');
-                            
-                            //Add Phone
-                            referenceFields.add('Phone');
-                            SObjectQueryFieldsList.add(lookupFieldName+'.Phone');
-                            
-                            //Add Object
-                            referenceFields.add(referenceTo);
-                            
-                            //Add Fax
-                            //referenceFields.add(lookupFieldName+'.Fax');
-                            //SObjectQueryFieldsList.add(lookupFieldName+'.Fax');
-                            
-                            Participients.put(lookupFieldName, referenceFields);
-                            UserContactFieldMap.put(fieldName, lookupFieldName);
+    public static SObjectFieldPackage getSObjectFields(String objectName, String whereClause, String orderBy, String recordLimit) {
+        try {
+            SObjectFieldPackage wrapper = new SObjectFieldPackage();
+            wrapper.SObjectFieldsList = new List<String>();
+            wrapper.SObjectFieldsProperties = new Map<String, Map<String, String>>();
+            wrapper.ParticipantList = new Map<String, List<String>>();
+            wrapper.UserContactFieldMap = new Map<String, String>();
+
+            Map<String, Schema.SObjectField> fieldMap = Schema.getGlobalDescribe().get(objectName.toLowerCase()).getDescribe().fields.getMap();
+            if (fieldMap == null) {
+                throw new IllegalArgumentException('Invalid SObject: ' + objectName);
+            }
+
+            for (String key : fieldMap.keySet()) {
+                Schema.SObjectField field = fieldMap.get(key);
+                Schema.DescribeFieldResult fieldDescribe = field.getDescribe();
+                Map<String, String> fieldMapProps = new Map<String, String>();
+
+                String fieldName = fieldDescribe.getName();
+                if (fieldDescribe.isAccessible()) {
+                    fieldMapProps.put('custom', String.valueOf(fieldDescribe.isCustom()));
+                    fieldMapProps.put('label', String.valueOf(fieldDescribe.getLabel()));
+                    fieldMapProps.put('length', String.valueOf(fieldDescribe.getLength()));
+                    fieldMapProps.put('localName', String.valueOf(fieldDescribe.getLocalName()));
+                    fieldMapProps.put('name', String.valueOf(fieldName));
+
+                    String referenceTo = String.valueOf(fieldDescribe.getReferenceTo());
+                    fieldMapProps.put('referenceTo', referenceTo);
+                    fieldMapProps.put('type', String.valueOf(fieldDescribe.getType()));
+
+                    wrapper.SObjectFieldsProperties.put(fieldName, fieldMapProps);
+                    wrapper.SObjectFieldsList.add(fieldName);
+
+                    if (fieldDescribe.getReferenceTo().size() > 0) {
+                        List<String> referenceFields = new List<String>();
+                        String lookupFieldName = '';
+                        if (fieldDescribe.isCustom()) {
+                            lookupFieldName = fieldName.replace('__c', '__r');
+                        } else {
+                            lookupFieldName = fieldName.replace('Id', '').replace('id', '');
                         }
-                        else{
-                            
-                            string referenceObjectName = string.valueOf(fieldDescribe.getReferenceTo()[0]);
-                            //System.debug('referenceObjectName: '+referenceObjectName);
-                            //check name field if exist in the reference object
-                            boolean hasNameField = Schema.getGlobalDescribe().get(referenceObjectName.toLowerCase()).getDescribe().Fields.getMap().containsKey('Name');
-                            
-                            
-                            //System.debug('hasNameField: '+hasNameField);
-                            //System.debug('lookupFieldName: '+lookupFieldName+'.Name');
-                            
-                            Schema.SObjectField nameField = Schema.getGlobalDescribe().get(referenceObjectName.toLowerCase()).getDescribe().Fields.getMap().get('Name');
-                            //System.debug('nameField: '+nameField);
-                            Schema.DescribeFieldResult fieldDescribeRef = nameField.getDescribe();
-                            //System.debug('fieldDescribeRef: '+fieldDescribeRef);
-                            if(hasNameField)
-                            {
-                                //Add Name field for other lookup fields
-                                SObjectQueryFieldsList.add(lookupFieldName+'.Name');    
+
+                        if (String.isNotBlank(lookupFieldName)) {
+                            if ((referenceTo.toLowerCase().contains('contact') || referenceTo.toLowerCase().contains('user')) &&
+                                !(key.equalsIgnoreCase('createdbyid') || key.equalsIgnoreCase('lastmodifiedbyid'))) {
+                                referenceFields.add('Id');
+                                referenceFields.add('Name');
+                                wrapper.SObjectFieldsList.add(lookupFieldName + '.Name');
+                                referenceFields.add('FirstName');
+                                wrapper.SObjectFieldsList.add(lookupFieldName + '.FirstName');
+                                referenceFields.add('LastName');
+                                wrapper.SObjectFieldsList.add(lookupFieldName + '.LastName');
+                                referenceFields.add('Email');
+                                wrapper.SObjectFieldsList.add(lookupFieldName + '.Email');
+                                referenceFields.add('Phone');
+                                wrapper.SObjectFieldsList.add(lookupFieldName + '.Phone');
+                                referenceFields.add(referenceTo);
+
+                                wrapper.ParticipantList.put(lookupFieldName, referenceFields);
+                                wrapper.UserContactFieldMap.put(fieldName, lookupFieldName);
+                            } else {
+                                String referenceObjectName = String.valueOf(fieldDescribe.getReferenceTo()[0]);
+                                Boolean hasNameField = Schema.getGlobalDescribe().get(referenceObjectName.toLowerCase()).getDescribe().fields.getMap().containsKey('Name');
+                                if (hasNameField) {
+                                    wrapper.SObjectFieldsList.add(lookupFieldName + '.Name');
+                                }
                             }
                         }
                     }
-                    
                 }
             }
+
+            String sObjectQuery = 'SELECT ' + String.join(wrapper.SObjectFieldsList, ',') + ' FROM ' + objectName + ' ' + 
+                                 whereClause + ' ' + orderBy + ' ' + recordLimit;
+            wrapper.Query = sObjectQuery;
+
+            return wrapper;
+        } catch (Exception e) {
+            System.debug(LoggingLevel.ERROR, 'Error in getSObjectFields: ' + e.getMessage());
+            throw new AuraHandledException('Error retrieving SObject fields: ' + e.getMessage());
         }
-        
-        //System.debug('FieldProperties: '+ JSON.serialize(FieldProperties) );
-        wrapper.SObjectFieldsProperties = FieldProperties;
-        
-        //System.debug('SObjectQueryFieldsList: '+ SObjectQueryFieldsList);
-        wrapper.SObjectFieldsList = SObjectQueryFieldsList;
-        
-        string sObjectQuery = 'Select '+ string.join(SObjectQueryFieldsList, ',') + ' from ' + objectname + ' ' + whereClause + ' ' + orderBy +' '+ recordLimit;
-        //System.debug('SObject Query: '+ sObjectQuery);
-        wrapper.Query = sObjectQuery; 
-        
-        //System.debug('Participents: '+ Participients);
-        wrapper.ParticipientList = Participients;
-        
-        //System.debug('UserContactFieldMap: '+ UserContactFieldMap);
-        wrapper.UserContactFieldMap = UserContactFieldMap;
-        
-        return wrapper;
     }
-     
-    public static string submitDocumentRequest(List<SignersRequest> signers, map<string,string> requestParams)
-    {
-        string objectName = requestParams.get('objectName');
-        string documentId = requestParams.get('documentId');
-        string documentName = requestParams.get('documentName');
-        string quoteName = requestParams.get('quoteName');
-        string url = requestParams.get('url');
-        string token = requestParams.get('token');
-        string externalId = requestParams.get('externalId');
-        string fileMimeType= 'application/pdf';
-         
-        System.debug('url: '+ url);
-        System.debug('signers: '+ signers);
-        
-        blob fileBlob =  DataLayer.getDocumentById(documentId, objectName);
-        string fileName = documentName+'.pdf';
-        string contentType = vNHttpFormBuilder.GetContentType();
-        
-        //  Compose the form
-        HttpHexFormBuilder builder = HttpHexFormBuilder.build()
-            .writeParam( 'Name', quoteName +' - '+documentName);
 
-        for(integer x=0;x<= signers.size() -1; x++)
-        { 
-            builder.writeParam( 'Participants['+string.valueOf(x)+'].ParticipantRole', signers[0].data.Role )
-                .writeParam( 'Participants['+string.valueOf(x)+'].Email', signers[0].data.Email )
-                .writeParam( 'Participants['+string.valueOf(x)+'].FirstName',  signers[0].data.FirstName )
-                .writeParam( 'Participants['+string.valueOf(x)+'].LastName', signers[0].data.LastName )  
-                .writeParam( 'Participants['+string.valueOf(x)+'].StaticSignatureEnabled', 'true')      
-                .writeParam( 'Participants['+string.valueOf(x)+'].ScriptedSignatureEnabled', 'true')   
-                .writeParam( 'Participants['+string.valueOf(x)+'].ImageSignatureEnabled', 'true');
+    /*
+    *********************************************************
+    @Method Name    : submitDocumentRequest
+    @description    : Submit document signing request to Authentisign
+    @param          : List<SignersRequest> signers, Map<String,String> requestParams
+    @return         : String (response body)
+    ********************************************************
+    */
+    public static String submitDocumentRequest(List<SignersRequest> signers, Map<String,String> requestParams) {
+        try {
+            String objectName = requestParams.get('objectName');
+            String documentId = requestParams.get('documentId');
+            String documentName = requestParams.get('documentName');
+            String recordName = requestParams.get('recordName');
+            String url = requestParams.get('url');
+            String token = requestParams.get('token');
+            String externalId = requestParams.get('externalId');
+
+            System.debug('url: ' + url);
+            System.debug('signers: ' + signers);
+
+            Blob fileBlob = DataLayer.getDocumentById(documentId, objectName);
+            if (fileBlob == null) {
+                throw new AuraHandledException('Document not found for ID: ' + documentId);
+            }
+
+            String fileName = documentName + '.pdf';
+            HttpHexFormBuilder builder = HttpHexFormBuilder.build()
+                .writeParam('Name', recordName + ' - ' + documentName);
+
+            for (Integer x = 0; x < signers.size(); x++) {
+                builder.writeParam('Participants[' + String.valueOf(x) + '].ParticipantRole', signers[x].data.Role)
+                    .writeParam('Participants[' + String.valueOf(x) + '].Email', signers[x].data.Email)
+                    .writeParam('Participants[' + String.valueOf(x) + '].FirstName', signers[x].data.FirstName)
+                    .writeParam('Participants[' + String.valueOf(x) + '].LastName', signers[x].data.LastName)
+                    .writeParam('Participants[' + String.valueOf(x) + '].StaticSignatureEnabled', 'true')
+                    .writeParam('Participants[' + String.valueOf(x) + '].ScriptedSignatureEnabled', 'true')
+                    .writeParam('Participants[' + String.valueOf(x) + '].ImageSignatureEnabled', 'true');
+            }
+
+            builder.writeFile('Files', fileName, EncodingUtil.base64Encode(fileBlob));
+            Blob formData = builder.getFormAsBlob();
+
+            HttpRequest httpRequest = new HttpRequest();
+            httpRequest.setBodyAsBlob(formData);
+            httpRequest.setEndpoint(url);
+            httpRequest.setHeader('Connection', 'keep-alive');
+            httpRequest.setHeader('Content-Length', String.valueOf(formData.size()));
+            httpRequest.setHeader('Content-Type', HttpHexFormBuilder.GetContentType());
+            httpRequest.setHeader('Authorization', 'Bearer ' + token);
+            httpRequest.setHeader('externalId', externalId);
+            httpRequest.setMethod('POST');
+            httpRequest.setTimeout(120000);
+
+            Http http = new Http();
+            HttpResponse response = http.send(httpRequest);
+            String responseBody = response.getBody();
+            System.debug('response: ' + response);
+
+            responseBody = responseBody.replace('\r', '').replace('\n', '');
+            System.debug('responseBody: ' + responseBody);
+
+            if (response.getStatusCode() != 200 && response.getStatusCode() != 201) {
+                throw new CalloutException('API call failed: ' + response.getStatusCode() + ' ' + response.getStatus());
+            }
+
+            return responseBody;
+        } catch (Exception e) {
+            System.debug(LoggingLevel.ERROR, 'Error in submitDocumentRequest: ' + e.getMessage());
+            throw new AuraHandledException('Error submitting document request: ' + e.getMessage());
         }
-        
-        builder.writeFile( 'Files', fileName, EncodingUtil.base64Encode(fileBlob));
-        Blob formData  = builder.getFormAsBlob();
-        
-        /*
-        HttpHexFormBuilder builder = HttpHexFormBuilder.build()
-            .writeParam( 'Name', 'Q-00000-20240319-1638' );
-
-        builder.writeParam( 'Participants[0].ParticipantRole', 'Signer 1' )
-            .writeParam( 'Participants[0].Email', 'aamir@frozenfishdev.com' )
-            .writeParam( 'Participants[0].FirstName', 'Aamir' )
-            .writeParam( 'Participants[0].LastName', 'Hussain' )  
-            .writeParam( 'Participants[0].StaticSignatureEnabled', 'true')      
-            .writeParam( 'Participants[0].ScriptedSignatureEnabled', 'true')   
-            .writeParam( 'Participants[0].ImageSignatureEnabled', 'true');   
-            
-        builder.writeFile( 'Files', fileName, EncodingUtil.base64Encode(fileBlob));
-        */
-        
-        //  Compose the http request
-        HttpRequest httpRequest = new HttpRequest();
-        httpRequest.setBodyAsBlob(formData);
-        httpRequest.setEndpoint(url);
-        httpRequest.setHeader('Connection', 'keep-alive');
-        httpRequest.setHeader('Content-Length', String.valueOf(formData.size()) );
-        httpRequest.setHeader('Content-Type', HttpHexFormBuilder.GetContentType() );
-        httpRequest.setHeader('Authorization','Bearer ' + token);
-        httpRequest.setHeader('externalId',externalId);
-        httpRequest.setMethod('POST');
-        httpRequest.setTimeout(120000);
-        
-        /**/
-        Http http = new Http();
-        HttpResponse response = http.send(httpRequest);
-        string responseBody = response.getBody();
-        System.debug(response);
-        
-        responseBody = responseBody.replace('\r','').replace('\n','');
-        System.debug(responseBody);
-        
-        return  responseBody;
-        
     }
 }

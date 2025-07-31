@@ -9,32 +9,31 @@ public with sharing class LayoutListCtrl {
 
     /**
     @methodname     LayoutResponse
-    @description    calls helper class method to get the layouts
+    @description    Calls helper class method to get the layouts
     @param          recordId 
     @param          objectName
     @return         LayoutResponse
     */
     @AuraEnabled
-    public static LayoutResponse getLayouts(string recordId, string objectName)
-    {
+    public static LayoutResponse getLayouts(String recordId, String objectName) {
+        // Note: Set objectName to 'Opportunity' for use with Opportunity records
         return LayoutListHelper.getLayouts(recordId, objectName);
     }
     
     /**
     @methodname     saveAttachment
-    @description    calls utility class method to save PDF as attachment
+    @description    Calls utility class method to save PDF as attachment
     @param          quoteId
     @param          signingId
     @param          objectName
-    @return         string (AttachmentId)
+    @return         String (AttachmentId)
     */
     @AuraEnabled
-    public static string saveAttachment(string quoteId, string signingId, string objectName, boolean isLayout)
-    {
-        string attachmentId = DataLayer.getAttachmentId(quoteId, objectName, isLayout);
-        if(attachmentId == '')
-        {
-            if(isLayout)
+    public static String saveAttachment(String quoteId, String signingId, String objectName, Boolean isLayout) {
+        // Note: Set objectName to 'Opportunity' for use with Opportunity records
+        String attachmentId = DataLayer.getAttachmentId(quoteId, objectName, isLayout);
+        if (attachmentId == '') {
+            if (isLayout)
                 attachmentId = Utility.savePDFasAttachment(quoteId, signingId, 'ls', objectName);
             else
                 attachmentId = Utility.savePDFasAttachmentDocument(quoteId, signingId, 'ls', objectName);
@@ -44,15 +43,14 @@ public with sharing class LayoutListCtrl {
     
     /**
     @methodname     getLayoutMappings
-    @description    calls data layer class method to get the saved mappings
+    @description    Calls data layer class method to get the saved mappings
     @param          layoutId
     @param          objectName
-    @return         string (json string mappings)
+    @return         String (JSON string mappings)
     */
     @AuraEnabled
-    public static string getLayoutMappings(string layoutId, string objectName)
-    {
+    public static String getLayoutMappings(String layoutId, String objectName) {
+        // Note: Set objectName to 'Opportunity' for use with Opportunity records
         return DataLayer.getLayoutMappings(layoutId, objectName);
     }
-
 }

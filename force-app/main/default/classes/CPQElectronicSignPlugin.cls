@@ -7,7 +7,7 @@ global class CPQElectronicSignPlugin implements SBQQ.ElectronicSignaturePlugin3 
         if(docs.size() > 0)
         {
             SBQQ__QuoteDocument__c qutoeDocument  = [Select Id,Name, SBQQ__Quote__c, SBQQ__DocumentId__c from SBQQ__QuoteDocument__c where Id =: docs[0].Id limit 1];
-            returnUrl = '/apex/authentisign__sendtoauthentisign?documentid='+qutoeDocument.SBQQ__DocumentId__c+'&quoteid='+ EncodingUtil.UrlEncode(qutoeDocument.SBQQ__Quote__c, 'UTF-8') +'&documentname='+ EncodingUtil.UrlEncode(qutoeDocument.Name, 'UTF-8') +'&objectname='+ EncodingUtil.UrlEncode('SBQQ__Quote__c','UTF-8');
+            returnUrl = '/apex/sendtoauthentisign?documentid='+qutoeDocument.SBQQ__DocumentId__c+'&quoteid='+ EncodingUtil.UrlEncode(qutoeDocument.SBQQ__Quote__c, 'UTF-8') +'&documentname='+ EncodingUtil.UrlEncode(qutoeDocument.Name, 'UTF-8') +'&objectname='+ EncodingUtil.UrlEncode('SBQQ__Quote__c','UTF-8');
         }
         //'/apex/sendtoauthentisign?documentid='+docs[0].Id+'&quoteid=&documentname=&objectname='+ EncodingUtil.UrlEncode('SBQQ__Quote__c','UTF-8');
         return  returnUrl;

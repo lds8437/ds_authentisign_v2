@@ -31,11 +31,11 @@ private class AuthentiSignMappingCtrlTest {
         
         ContentVersion contentVersion_2 = [SELECT Id, Title, ContentDocumentId FROM ContentVersion WHERE Id = :contentVersion_1.Id LIMIT 1];
         
-        authentisign__Setting__c setting = new authentisign__Setting__c();
-        setting.authentisign__Account_Id__c = '66767a4f-329b-4acb-89ad-5f7bb31af7fd';
-        setting.authentisign__Bearer_Token__c = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiIyODNDRjIyNC0zRkJBLTQ1OUItQTdCMy0wOTk1OEUyMEY0MTciLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9zaWQiOiI0MEQxNEM3QS1GNjExLUVFMTEtQTlCQi0wMDBEM0ExMzZBQTciLCJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyLCJhdWQiOiJhdXRoZW50aXNpZ25fZXh0ZXJuYWwiLCJpc3MiOiJhdXRoZW50aXNpZ24iLCJleHAiOjE3MTYyMzkwMjIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL3N5c3RlbSI6IkV4dGVybmFsIn0.TLKQR-WYnHYkf6nq2pxa2pb8m4rpU5hPf7vvgmi32M4';
-        setting.authentisign__Callback_Url__c = 'https://lonewolf5-dev-ed.develop.my.salesforce-sites.com/services/apexrest/authentisign/callback';
-        setting.authentisign__Endpoint__c = 'https://api.pre.authentisign.com';
+        Setting__c setting = new Setting__c();
+        setting.Account_Id__c = '66767a4f-329b-4acb-89ad-5f7bb31af7fd';
+        setting.Bearer_Token__c = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiIyODNDRjIyNC0zRkJBLTQ1OUItQTdCMy0wOTk1OEUyMEY0MTciLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9zaWQiOiI0MEQxNEM3QS1GNjExLUVFMTEtQTlCQi0wMDBEM0ExMzZBQTciLCJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyLCJhdWQiOiJhdXRoZW50aXNpZ25fZXh0ZXJuYWwiLCJpc3MiOiJhdXRoZW50aXNpZ24iLCJleHAiOjE3MTYyMzkwMjIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL3N5c3RlbSI6IkV4dGVybmFsIn0.TLKQR-WYnHYkf6nq2pxa2pb8m4rpU5hPf7vvgmi32M4';
+        setting.Callback_Url__c = 'https://lonewolf5-dev-ed.develop.my.salesforce-sites.com/services/apexrest/authentisign/callback';
+        setting.Endpoint__c = 'https://api.pre.authentisign.com';
         insert setting;
         
         List<Quote> lstQuote = new List<Quote>();
@@ -55,7 +55,7 @@ private class AuthentiSignMappingCtrlTest {
         
         for(Integer i=0; i< 1 ; i++)
 		{
-			lstQuote.add(new Quote(OpportunityId = objOpp.Id, Name = 'Test Quote' + i,   Status = 'Review Pending', authentisign__Signing_Id__c = '123', authentisign__Authsign_Status__c  = 'sent'));
+			lstQuote.add(new Quote(OpportunityId = objOpp.Id, Name = 'Test Quote' + i,   Status = 'Review Pending', Signing_Id__c = '123', Authsign_Status__c  = 'sent'));
 		}
         insert lstQuote;
     }
@@ -72,7 +72,7 @@ private class AuthentiSignMappingCtrlTest {
     private static void getAllDataTest()
     {
         
-        Quote quot = [Select Id,Name, authentisign__Layout_Id__c, authentisign__Signing_Id__c, authentisign__Authsign_Status__c, authentisign__AttachmentId__c from Quote limit 1];
+        Quote quot = [Select Id,Name, Layout_Id__c, Signing_Id__c, Authsign_Status__c, AttachmentId__c from Quote limit 1];
         
         Test.startTest();
         
@@ -97,7 +97,7 @@ private class AuthentiSignMappingCtrlTest {
     @IsTest
     private static void fillandsubmitTest()
     {
-        Quote quot = [Select Id,Name, authentisign__Layout_Id__c, authentisign__Signing_Id__c, authentisign__Authsign_Status__c, authentisign__AttachmentId__c from Quote limit 1];
+        Quote quot = [Select Id,Name, Layout_Id__c, Signing_Id__c, Authsign_Status__c, AttachmentId__c from Quote limit 1];
         
         string requestString = '{"name":"Test Quote 1","isOrdered":false,"expirationDate":"2023-08-31T00:00:00.000Z","callbackUrl":"https://frozenfishdevelopment--ffd.sandbox.my.site.com/portal/services/apexrest/callback","layoutId":"e1e1aa76-5f32-ee11-a3f1-000d3a1d5b2d","fields":{"Product":"0Q0DC000000AUY30AO","AgentNumber":"005Dn000007gsa9IAA","Test Field 1":"Aamir Hussain"},"participants":[{"firstname":"Aamir","middlename":"","lastname":"Hussain","email":"aamir@frozenfishdev.com","type":0,"participantRole":"buyer","staticSignatureEnabled":true,"scriptedSignatureEnabled":true,"imageSignatureEnabled":true},{"firstname":"Jarrett","middlename":"","lastname":"Fisher","email":"jarrett@frozenfishdev.com","type":0,"participantRole":"Seller","staticSignatureEnabled":true,"scriptedSignatureEnabled":true,"imageSignatureEnabled":true}]}';
         string layoutId = 'e1e1aa76-5f32-ee11-a3f1-000d3a1d5b2d';
@@ -138,7 +138,7 @@ private class AuthentiSignMappingCtrlTest {
     @IsTest
     private static void fillandsubmitDocumentTest()
     {
-        Quote quot = [Select Id,Name, authentisign__Layout_Id__c, authentisign__Signing_Id__c, authentisign__Authsign_Status__c, authentisign__AttachmentId__c from Quote limit 1];
+        Quote quot = [Select Id,Name, Layout_Id__c, Signing_Id__c, Authsign_Status__c, AttachmentId__c from Quote limit 1];
         
         ContentVersion content = [Select Id,Title from ContentVersion limit 1];
         
@@ -181,7 +181,7 @@ private class AuthentiSignMappingCtrlTest {
     @IsTest
     private static void savePDFAttachmentTest()
     {
-        Quote quot = [Select Id,Name, authentisign__Layout_Id__c, authentisign__Signing_Id__c, authentisign__Authsign_Status__c, authentisign__AttachmentId__c from Quote limit 1];
+        Quote quot = [Select Id,Name, Layout_Id__c, Signing_Id__c, Authsign_Status__c, AttachmentId__c from Quote limit 1];
         string signingId = 'e1e1aa76-5f32-ee11-a3f1-000d3a1d5b2d';
             
         Map<string,string> headers = new Map<string,string>();

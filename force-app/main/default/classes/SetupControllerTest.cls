@@ -4,11 +4,11 @@ private class SetupControllerTest {
     @IsTest
     private static void UnitTestGETCallBack() {
         
-        authentisign__Setting__c setting = new authentisign__Setting__c();
-        setting.authentisign__Account_Id__c = '123';
-        setting.authentisign__Endpoint__c = 'test.test.com';
-        setting.authentisign__Callback_Url__c = 'test.test.com';
-        setting.authentisign__Bearer_Token__c = '12345';
+        Setting__c setting = new Setting__c();
+        setting.Account_Id__c = '123';
+        setting.Endpoint__c = 'test.test.com';
+        setting.Callback_Url__c = 'test.test.com';
+        setting.Bearer_Token__c = '12345';
         
         insert setting;
         
@@ -20,9 +20,9 @@ private class SetupControllerTest {
         
         controller.saveConfig();
         
-        authentisign__Setting__c settingRecord =  [SELECT Id, Name, authentisign__Endpoint__c, authentisign__Account_Id__c, authentisign__Bearer_Token__c, authentisign__Callback_Url__c FROM authentisign__Setting__c limit 1];
+        Setting__c settingRecord =  [SELECT Id, Name, Endpoint__c, Account_Id__c, Bearer_Token__c, Callback_Url__c FROM Setting__c limit 1];
         
         
-        System.assert(settingRecord.authentisign__Endpoint__c == 'test.salesforce.com');
+        System.assert(settingRecord.Endpoint__c == 'test.salesforce.com');
     }
 }

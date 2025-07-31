@@ -5,32 +5,31 @@
 @author             : FFD Developer
 @Modification Log   : 
 */
-public with sharing class LayoutParticipant
-{
+public with sharing class LayoutParticipant {
     /**
      * @description id
-     * @return string
+     * @return String
      */
     @AuraEnabled
-    public string id { get; set; }
+    public String id { get; set; }
     /**
-     * @description layouintegertId
-     * @return string
+     * @description layoutId
+     * @return String
      */
     @AuraEnabled
-    public string layoutId { get; set; }
+    public String layoutId { get; set; }
     /**
      * @description role
-     * @return string
+     * @return String
      */
     @AuraEnabled
-    public string role { get; set; }
+    public String role { get; set; }
     /**
      * @description order
-     * @return integer
+     * @return Integer
      */
     @AuraEnabled
-    public integer order { get; set; }
+    public Integer order { get; set; }
     /**
      * @description dateCreated
      * @return DateTime
@@ -39,8 +38,9 @@ public with sharing class LayoutParticipant
     public DateTime dateCreated { get; set; }
     /**
      * @description layout
-     * @return string
+     * @return String
      */
     @AuraEnabled
-    public string layout { get; set; }
+    public String layout { get; set; }
+    // No changes needed; compatible with Opportunity and generic SObjects
 }
