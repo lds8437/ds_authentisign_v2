@@ -22,5 +22,11 @@
         <members>SigningStatusResponse</members>
         <name>ApexClass</name>
     </types>
+	<types>
+        <members>authentiSignLayoutList</members>
+        <members>authentiSignDocumentSigners</members>
+        <members>authentiSignMappingLayout</members>
+        <name>LightningComponentBundle</name>
+    </types>
 	<version>63.0</version>
 </Package>
