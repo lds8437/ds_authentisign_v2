@@ -1,104 +1,114 @@
 <template>
-    <lightning-card variant="base" title="Layout Mapping">
-        <div slot="actions">
-            <lightning-button label="Back" variant="brand" onclick={handleBack}></lightning-button>
+  <lightning-card variant="base" title="Layout Mapping">
+    <!-- Spinner -->
+    <template if:true={spinner}>
+      <div class="slds-spinner_container">
+        <div class="slds-spinner slds-spinner_brand slds-spinner_large slds-is-relative" role="alert">
+          <span class="slds-assistive-text">Loading...</span>
+          <div class="slds-spinner__dot-a"></div>
+          <div class="slds-spinner__dot-b"></div>
         </div>
-        <div class="slds-p-horizontal_small">
-            <div class="slds-grid slds-wrap">
-                <div class="slds-col slds-size_2-of-12"></div>
-                <div class="slds-col slds-size_3-of-12">
-                    <h1 class="slds-text-heading_medium slds-m-bottom_xx-small">Layout</h1>
-                    <h3 class="slds-text-heading_small slds-m-bottom_xx-small">{selectedLayout?.name}</h3>
-                </div>
-                <div class="slds-col slds-size_4-of-12">
-                    <h1 class="slds-text-heading_medium slds-m-bottom_xx-small">Opportunity</h1>
-                    <h3 class="slds-text-heading_small slds-m-bottom_xx-small">{allData?.opportunity?.Name}</h3>
-                </div>
-                <div class="slds-col slds-size_3-of-12">
-                    <h1 class="slds-text-heading_medium slds-m-bottom_xx-small">Expiration Date</h1>
-                    <h3 class="slds-text-heading_small slds-m-bottom_xx-small">{expirationDate}</h3>
-                </div>
-            </div>
-            <br /><br />
-            <div class="slds-grid slds-wrap">
-                <div class="slds-col slds-size_2-of-12"></div>
-                <div class="slds-col slds-size_8-of-12">
-                    <table class="slds-table slds-table_cell-buffer slds-table_bordered" aria-labelledby="element-with-table-label">
-                        <thead>
-                            <tr class="slds-line-height_reset">
-                                <th scope="col"><div class="slds-truncate" title="AuthentiSign Fields">AuthentiSign Fields</div></th>
-                                <th scope="col"><div class="slds-truncate" title="Map to Opportunity Line Item">Map to<br/>Opportunity Line Item</div></th>
-                                <th scope="col"><div class="slds-truncate" title="Salesforce Fields">Salesforce Fields</div></th>
-                                <th scope="col"><div class="slds-truncate" title="Value">Value</div></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <template for:each={fields} for:item="record" for:index="index">
-                                <tr key={record} class="slds-hint-parent">
-                                    <td data-label="AuthentiSign Field"><div class="slds-truncate">{record}</div></td>
-                                    <td data-label="Checkbox">
-                                        <lightning-input type="checkbox" name={'chkQuoteLI-' + index} title={record} onchange={chkQuoteLIChange}></lightning-input>
-                                    </td>
-                                    <td data-label="Salesforce Field">
-                                        <lightning-combobox name={'ddlSFQuoteField-' + index} title={record} label="Opportunity Fields" options={opportunityFields} onchange={handleChangeQuoteddl}></lightning-combobox>
-                                        <lightning-combobox name={'ddlLineItems-' + index} title={record} label="Opportunity Line Item Records" options={lineItemRecords} onchange={handleChangeQuoteLineItemddl} class={getLineItemClass(index)}></lightning-combobox>
-                                        <lightning-combobox name={'ddlSFQuoteLineItemField-' + index} title={record} label="Opportunity Line Item Fields" options={opportunityLineItemFields} onchange={handleChangeQuoteLineItemddl} class={getLineItemClass(index)}></lightning-combobox>
-                                    </td>
-                                    <td data-label="Value">
-                                        <lightning-input type="text" name={'txtquotefieldvalue-' + index} label="" disabled={true} value={fieldValues[record]}></lightning-input>
-                                    </td>
-                                </tr>
-                            </template>
-                        </tbody>
-                    </table>
-                </div>
-                <div class="slds-col slds-size_2-of-12"></div>
-            </div>
-            <br /><br />
-            <div class="slds-grid slds-wrap">
-                <div class="slds-col slds-size_2-of-12"></div>
-                <div class="slds-col slds-size_8-of-12">
-                    <h2 class="slds-text-heading_medium slds-m-bottom_xx-small">Participants</h2>
-                </div>
-            </div>
-            <div class="slds-grid slds-wrap">
-                <div class="slds-col slds-size_2-of-12"></div>
-                <div class="slds-col slds-size_8-of-12">
-                    <table class="slds-table slds-table_cell-buffer slds-table_bordered" aria-labelledby="element-with-table-label">
-                        <thead>
-                            <tr class="slds-line-height_reset">
-                                <th scope="col"><div class="slds-truncate" title="Role">Role</div></th>
-                                <th scope="col"><div class="slds-truncate" title="User/Contact">User/Contact</div></th>
-                                <th scope="col"><div class="slds-truncate" title="Name">Name</div></th>
-                                <th scope="col"><div class="slds-truncate" title="Email">Email</div></th>
-                                <th scope="col"><div class="slds-truncate" title="Type">Type</div></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <template for:each={roles} for:item="record" for:index="index">
-                                <tr key={record.name} class="slds-hint-parent">
-                                    <td data-label="Role"><div class="slds-truncate">{record.name}</div></td>
-                                    <td data-label="User/Contact">
-                                        <lightning-combobox name={'ddlUserContact-' + index} title={record.name} options={usercontactfields} value={record.data?.fieldName} onchange={handleUserContactddl}></lightning-combobox>
-                                    </td>
-                                    <td data-label="Name"><div class="slds-truncate">{record.data?.Name}</div></td>
-                                    <td data-label="Email"><div class="slds-truncate">{record.data?.Email}</div></td>
-                                    <td data-label="Type"><div class="slds-truncate">{record.data?.Type}</div></td>
-                                </tr>
-                            </template>
-                        </tbody>
-                    </table>
-                </div>
-                <div class="slds-col slds-size_2-of-12"></div>
-            </div>
-            <br /><br />
-            <div class="slds-grid slds-wrap">
-                <div class="slds-col slds-size_2-of-12"></div>
-                <div class="slds-col slds-size_8-of-12">
-                    <lightning-button label="Fill and Send" variant="brand" onclick={createRequest}></lightning-button>
-                </div>
-                <div class="slds-col slds-size_2-of-12"></div>
-            </div>
+      </div>
+    </template>
+    <div slot="actions">
+      <lightning-button label="Back" variant="brand" onclick={handleBack}></lightning-button>
+    </div>
+    <div class="slds-p-horizontal_small">
+      <div class="slds-grid slds-wrap">
+        <div class="slds-col slds-size_2-of-12"></div>
+        <div class="slds-col slds-size_3-of-12">
+          <h1 class="slds-text-heading_medium slds-m-bottom_xx-small">Layout</h1>
+          <h3 class="slds-text-heading_small slds-m-bottom_xx-small">{selectedLayoutName}</h3>
         </div>
-    </lightning-card>
+        <div class="slds-col slds-size_4-of-12">
+          <h1 class="slds-text-heading_medium slds-m-bottom_xx-small">Opportunity</h1>
+          <h3 class="slds-text-heading_small slds-m-bottom_xx-small">{opportunityName}</h3>
+        </div>
+        <div class="slds-col slds-size_3-of-12">
+          <h1 class="slds-text-heading_medium slds-m-bottom_xx-small">Expiration Date</h1>
+          <h3 class="slds-text-heading_small slds-m-bottom_xx-small">{expirationDate}</h3>
+        </div>
+      </div>
+      <br /><br />
+      <div class="slds-grid slds-wrap">
+        <div class="slds-col slds-size_2-of-12"></div>
+        <div class="slds-col slds-size_8-of-12">
+          <table class="slds-table slds-table_cell-buffer slds-table_bordered" aria-labelledby="element-with-table-label">
+            <thead>
+              <tr class="slds-line-height_reset">
+                <th scope="col"><div class="slds-truncate" title="AuthentiSign Fields">AuthentiSign Fields</div></th>
+                <th scope="col"><div class="slds-truncate" title="Map to Opportunity Line Item">Map to<br/>Opportunity Line Item</div></th>
+                <th scope="col"><div class="slds-truncate" title="Salesforce Fields">Salesforce Fields</div></th>
+                <th scope="col"><div class="slds-truncate" title="Value">Value</div></th>
+              </tr>
+            </thead>
+            <tbody>
+              <template for:each={fields} for:item="record" for:index="index">
+                <tr key={record.field} class="slds-hint-parent">
+                  <td data-label="AuthentiSign Field"><div class="slds-truncate">{record.field}</div></td>
+                  <td data-label="Checkbox">
+                    <lightning-input type="checkbox" data-id={record.chkQuoteLIId} title={record.field} onchange={chkQuoteLIChange}></lightning-input>
+                  </td>
+                  <td data-label="Salesforce Field">
+                    <lightning-combobox data-id={record.ddlSFQuoteFieldId} title={record.field} label="Opportunity Fields" options={opportunityFields} onchange={handleChangeQuoteddl}></lightning-combobox>
+                    <lightning-combobox data-id={record.ddlLineItemsId} title={record.field} label="Opportunity Line Item Records" options={lineItemRecords} onchange={handleChangeQuoteLineItemddl} class={record.lineItemClass}></lightning-combobox>
+                    <lightning-combobox data-id={record.ddlSFQuoteLineItemFieldId} title={record.field} label="Opportunity Line Item Fields" options={opportunityLineItemFields} onchange={handleChangeQuoteLineItemddl} class={record.lineItemClass}></lightning-combobox>
+                  </td>
+                  <td data-label="Value">
+                    <lightning-input type="text" data-id={record.txtQuoteFieldValueId} label="" disabled value={record.fieldValue}></lightning-input>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+        <div class="slds-col slds-size_2-of-12"></div>
+      </div>
+      <br /><br />
+      <div class="slds-grid slds-wrap">
+        <div class="slds-col slds-size_2-of-12"></div>
+        <div class="slds-col slds-size_8-of-12">
+          <h2 class="slds-text-heading_medium slds-m-bottom_xx-small">Participants</h2>
+        </div>
+      </div>
+      <div class="slds-grid slds-wrap">
+        <div class="slds-col slds-size_2-of-12"></div>
+        <div class="slds-col slds-size_8-of-12">
+          <table class="slds-table slds-table_cell-buffer slds-table_bordered" aria-labelledby="element-with-table-label">
+            <thead>
+              <tr class="slds-line-height_reset">
+                <th scope="col"><div class="slds-truncate" title="Role">Role</div></th>
+                <th scope="col"><div class="slds-truncate" title="User/Contact">User/Contact</div></th>
+                <th scope="col"><div class="slds-truncate" title="Name">Name</div></th>
+                <th scope="col"><div class="slds-truncate" title="Email">Email</div></th>
+                <th scope="col"><div class="slds-truncate" title="Type">Type</div></th>
+              </tr>
+            </thead>
+            <tbody>
+              <template for:each={roles} for:item="record" for:index="index">
+                <tr key={record.name} class="slds-hint-parent">
+                  <td data-label="Role"><div class="slds-truncate">{record.name}</div></td>
+                  <td data-label="User/Contact">
+                    <lightning-combobox data-id={record.ddlUserContactId} title={record.name} options={usercontactfields} value={record.fieldName} onchange={handleUserContactddl}></lightning-combobox>
+                  </td>
+                  <td data-label="Name"><div class="slds-truncate">{record.data.Name}</div></td>
+                  <td data-label="Email"><div class="slds-truncate">{record.data.Email}</div></td>
+                  <td data-label="Type"><div class="slds-truncate">{record.data.Type}</div></td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+        <div class="slds-col slds-size_2-of-12"></div>
+      </div>
+      <br /><br />
+      <div class="slds-grid slds-wrap">
+        <div class="slds-col slds-size_2-of-12"></div>
+        <div class="slds-col slds-size_8-of-12">
+          <lightning-button label="Fill and Send" variant="brand" onclick={createRequest}></lightning-button>
+        </div>
+        <div class="slds-col slds-size_2-of-12"></div>
+      </div>
+    </div>
+  </lightning-card>
 </template>

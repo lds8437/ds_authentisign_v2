@@ -1,83 +1,93 @@
 <template>
-    <lightning-card variant="base" title="Add Signers">
-        <div slot="actions">
-            <lightning-button label="Back" variant="brand" onclick={handleBack}></lightning-button>
+  <lightning-card variant="base" title="Add Signers">
+    <!-- Spinner -->
+    <template if:true={spinner}>
+      <div class="slds-spinner_container">
+        <div class="slds-spinner slds-spinner_brand slds-spinner_large slds-is-relative" role="alert">
+          <span class="slds-assistive-text">Loading...</span>
+          <div class="slds-spinner__dot-a"></div>
+          <div class="slds-spinner__dot-b"></div>
         </div>
-        <div class="slds-p-horizontal_small">
-            <div class="slds-grid slds-wrap">
-                <div class="slds-col slds-size_2-of-12"></div>
-                <div class="slds-col slds-size_5-of-12">
-                    <h1 class="slds-text-heading_medium slds-m-bottom_xx-small">Document:</h1>
-                    <h3 class="slds-text-heading_small slds-m-bottom_xx-small">{documentName}</h3>
-                </div>
-                <div class="slds-col slds-size_5-of-12">
-                    <h1 class="slds-text-heading_medium slds-m-bottom_xx-small">Opportunity:</h1>
-                    <h3 class="slds-text-heading_small slds-m-bottom_xx-small">{allData?.opportunity?.Name}</h3>
-                </div>
-            </div>
-            <template if:true={showMessage}>
-                <div class="slds-grid slds-wrap">
-                    <div class="slds-col slds-size_4-of-12"></div>
-                    <div class="slds-col slds-size_4-of-12">
-                        <lightning-toast title={messageTitle} variant={messageType}>{message}</lightning-toast>
-                    </div>
-                    <div class="slds-col slds-size_4-of-12"></div>
-                </div>
-            </template>
-            <br /><br />
-            <div class="slds-grid slds-wrap">
-                <div class="slds-col slds-size_2-of-12"></div>
-                <div class="slds-col slds-size_7-of-12">
-                    <h2 class="slds-text-heading_medium slds-m-bottom_xx-small">Signers</h2>
-                </div>
-                <div class="slds-col slds-size_1-of-12" style="text-align:right;">
-                    <lightning-button label="Add" variant="brand" onclick={addSigner}></lightning-button>
-                </div>
-            </div>
-            <div class="slds-grid slds-wrap">
-                <div class="slds-col slds-size_2-of-12"></div>
-                <div class="slds-col slds-size_8-of-12">
-                    <table class="slds-table slds-table_cell-buffer slds-table_bordered" aria-labelledby="element-with-table-label">
-                        <thead>
-                            <tr class="slds-line-height_reset">
-                                <th scope="col"><div class="slds-truncate" title="Role">Role</div></th>
-                                <th scope="col"><div class="slds-truncate" title="User/Contact">User/Contact</div></th>
-                                <th scope="col"><div class="slds-truncate" title="Name">Name</div></th>
-                                <th scope="col"><div class="slds-truncate" title="Email">Email</div></th>
-                                <th scope="col"><div class="slds-truncate" title="Type">Type</div></th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <template for:each={signers} for:item="record" for:index="index">
-                                <tr key={record.data.Id} class="slds-hint-parent">
-                                    <td data-label="Role" style="width:20%">
-                                        <lightning-input type="text" value={record.data.Role} name={'txtRole-' + index} label=""></lightning-input>
-                                    </td>
-                                    <td data-label="User/Contact">
-                                        <lightning-combobox name={'ddlUserContact-' + index} value={record.data.fieldName} options={usercontactfields} onchange={handleUserContactddl}></lightning-combobox>
-                                    </td>
-                                    <td data-label="Name"><div class="slds-truncate">{record.data.Name}</div></td>
-                                    <td data-label="Email"><div class="slds-truncate">{record.data.Email}</div></td>
-                                    <td data-label="Type"><div class="slds-truncate">{record.data.Type}</div></td>
-                                    <td style="width:5%">
-                                        <lightning-button-icon icon-name="utility:delete" variant="bare" name={'btnDelete-' + index} onclick={deleteSigner} alternative-text="Delete" title="Delete"></lightning-button-icon>
-                                    </td>
-                                </tr>
-                            </template>
-                        </tbody>
-                    </table>
-                </div>
-                <div class="slds-col slds-size_2-of-12"></div>
-            </div>
-            <br /><br />
-            <div class="slds-grid slds-wrap">
-                <div class="slds-col slds-size_2-of-12"></div>
-                <div class="slds-col slds-size_8-of-12">
-                    <lightning-button label="Submit Request" variant="brand" onclick={createRequest}></lightning-button>
-                </div>
-                <div class="slds-col slds-size_2-of-12"></div>
-            </div>
+      </div>
+    </template>
+    <div slot="actions">
+      <lightning-button label="Back" variant="brand" onclick={handleBack}></lightning-button>
+    </div>
+    <div class="slds-p-horizontal_small">
+      <div class="slds-grid slds-wrap">
+        <div class="slds-col slds-size_2-of-12"></div>
+        <div class="slds-col slds-size_5-of-12">
+          <h1 class="slds-text-heading_medium slds-m-bottom_xx-small">Document:</h1>
+          <h3 class="slds-text-heading_small slds-m-bottom_xx-small">{documentName}</h3>
         </div>
-    </lightning-card>
+        <div class="slds-col slds-size_5-of-12">
+          <h1 class="slds-text-heading_medium slds-m-bottom_xx-small">Opportunity:</h1>
+          <h3 class="slds-text-heading_small slds-m-bottom_xx-small">{opportunityName}</h3>
+        </div>
+      </div>
+      <template if:true={showMessage}>
+        <div class="slds-grid slds-wrap">
+          <div class="slds-col slds-size_4-of-12"></div>
+          <div class="slds-col slds-size_4-of-12">
+            <lightning-toast title={messageTitle} variant={messageType}>{message}</lightning-toast>
+          </div>
+          <div class="slds-col slds-size_4-of-12"></div>
+        </div>
+      </template>
+      <br /><br />
+      <div class="slds-grid slds-wrap">
+        <div class="slds-col slds-size_2-of-12"></div>
+        <div class="slds-col slds-size_7-of-12">
+          <h2 class="slds-text-heading_medium slds-m-bottom_xx-small">Signers</h2>
+        </div>
+        <div class="slds-col slds-size_1-of-12" style="text-align:right;">
+          <lightning-button label="Add" variant="brand" onclick={addSigner}></lightning-button>
+        </div>
+      </div>
+      <div class="slds-grid slds-wrap">
+        <div class="slds-col slds-size_2-of-12"></div>
+        <div class="slds-col slds-size_8-of-12">
+          <table class="slds-table slds-table_cell-buffer slds-table_bordered" aria-labelledby="element-with-table-label">
+            <thead>
+              <tr class="slds-line-height_reset">
+                <th scope="col"><div class="slds-truncate" title="Role">Role</div></th>
+                <th scope="col"><div class="slds-truncate" title="User/Contact">User/Contact</div></th>
+                <th scope="col"><div class="slds-truncate" title="Name">Name</div></th>
+                <th scope="col"><div class="slds-truncate" title="Email">Email</div></th>
+                <th scope="col"><div class="slds-truncate" title="Type">Type</div></th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <template for:each={signers} for:item="record" for:index="index">
+                <tr key={record.data.Id} class="slds-hint-parent">
+                  <td data-label="Role" style="width:20%">
+                    <lightning-input type="text" value={record.data.Role} data-id={record.txtRoleId} label="" onchange={handleRoleChange}></lightning-input>
+                  </td>
+                  <td data-label="User/Contact">
+                    <lightning-combobox data-id={record.ddlUserContactId} value={record.data.fieldName} options={usercontactfields} onchange={handleUserContactddl}></lightning-combobox>
+                  </td>
+                  <td data-label="Name"><div class="slds-truncate">{record.data.Name}</div></td>
+                  <td data-label="Email"><div class="slds-truncate">{record.data.Email}</div></td>
+                  <td data-label="Type"><div class="slds-truncate">{record.data.Type}</div></td>
+                  <td style="width:5%">
+                    <lightning-button-icon icon-name="utility:delete" variant="bare" data-id={record.btnDeleteId} onclick={deleteSigner} alternative-text="Delete" title="Delete"></lightning-button-icon>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+        <div class="slds-col slds-size_2-of-12"></div>
+      </div>
+      <br /><br />
+      <div class="slds-grid slds-wrap">
+        <div class="slds-col slds-size_2-of-12"></div>
+        <div class="slds-col slds-size_8-of-12">
+          <lightning-button label="Submit Request" variant="brand" onclick={createRequest}></lightning-button>
+        </div>
+        <div class="slds-col slds-size_2-of-12"></div>
+      </div>
+    </div>
+  </lightning-card>
 </template>

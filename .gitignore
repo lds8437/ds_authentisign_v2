@@ -1,0 +1,14 @@
+# Ignore node modules
+node_modules/
+
+# Ignore Salesforce config and local env files
+.sfdx/
+.env
+*.log
+.sf/
+
+# Ignore VS Code settings
+.vscode/
+
+# Ignore macOS system files
+.DS_Store
