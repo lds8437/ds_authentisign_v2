@@ -1,0 +1,128 @@
+<template>
+    <lightning-card variant="base" title="Authentisign Layout">
+        <!-- Spinner -->
+        <template if:true={spinner}>
+            <div class="slds-spinner_container">
+                <div class="slds-spinner slds-spinner_brand slds-spinner_large slds-is-relative" role="alert">
+                    <span class="slds-assistive-text">Loading...</span>
+                    <div class="slds-spinner__dot-a"></div>
+                    <div class="slds-spinner__dot-b"></div>
+                </div>
+            </div>
+        </template>
+
+        <!-- Radio Group -->
+        <div class="slds-form-element slds-p-horizontal_small">
+            <lightning-radio-group
+                name="radioGroup"
+                options={radioOptions}
+                value={selectedOption}
+                onchange={handleChangeRadio}
+            ></lightning-radio-group>
+        </div>
+
+        <!-- Document Section -->
+        <template if:true={isDocumentSelected}>
+            <div class="slds-p-horizontal_small">
+                <lightning-combobox
+                    name="ddlDocuments"
+                    value={selectedDocument}
+                    label=""
+                    options={documents}
+                    onchange={handleChangeDocument}
+                    disabled={isDocumentDisabled}
+                ></lightning-combobox>
+            </div>
+
+            <template if:true={documentSigningId}>
+                <br />
+                <p style="margin-left:15px;">
+                    <b>Status:</b>&nbsp;&nbsp;
+                    <template if:false={isDocumentSigned}>
+                        <span class="slds-badge">{documentSigningStatus}</span>
+                    </template>
+                    <template if:true={isDocumentSigned}>
+                        <span class="slds-badge slds-theme_success">{documentSigningStatus}</span>
+                    </template>
+                </p>
+                <br />
+                <p style="margin-left:15px;">
+                    <b>Preview:</b>&nbsp;&nbsp;
+                    <lightning-button-icon
+                        size="large"
+                        icon-name="utility:pdf_ext"
+                        variant="bare"
+                        onclick={displayPdfDocument}
+                        alternative-text="PDF"
+                        title="PDF"
+                    ></lightning-button-icon>
+                </p>
+            </template>
+            <br />
+            <div class="slds-p-horizontal_small">
+                <div class="slds-form-element__control">
+                    <div class="slds-col slds-size_12-of-12" style="text-align:right;">
+                        <lightning-button
+                            class={btnStartDocumentClass}
+                            label="Start"
+                            variant="brand"
+                            onclick={navigateToSigners}
+                        ></lightning-button>
+                    </div>
+                </div>
+            </div>
+        </template>
+
+        <!-- Layout Section -->
+        <template if:false={isDocumentSelected}>
+            <div class="slds-p-horizontal_small">
+                <lightning-combobox
+                    name="ddlLayout"
+                    value={selectedRecord}
+                    label=""
+                    options={layouts}
+                    onchange={handleLayoutChange}
+                    disabled={savedLayoutId}
+                ></lightning-combobox>
+            </div>
+
+            <template if:true={savedLayoutId}>
+                <br />
+                <p style="margin-left:15px;">
+                    <b>Status:</b>&nbsp;&nbsp;
+                    <template if:false={isLayoutSigned}>
+                        <span class="slds-badge">{signingStatus}</span>
+                    </template>
+                    <template if:true={isLayoutSigned}>
+                        <span class="slds-badge slds-theme_success">{signingStatus}</span>
+                    </template>
+                </p>
+                <br />
+                <p style="margin-left:15px;">
+                    <b>Preview:</b>&nbsp;&nbsp;
+                    <lightning-button-icon
+                        size="large"
+                        icon-name="utility:pdf_ext"
+                        variant="bare"
+                        onclick={displayPdf}
+                        alternative-text="PDF"
+                        title="PDF"
+                    ></lightning-button-icon>
+                </p>
+            </template>
+            <br />
+            <div class="slds-p-horizontal_small">
+                <div class="slds-form-element__control">
+                    <div class="slds-col slds-size_12-of-12" style="text-align:right;">
+                        <lightning-button
+                            class={btnStartClass}
+                            label="Start"
+                            variant="brand"
+                            onclick={navigateToMappings}
+                        ></lightning-button>
+                    </div>
+                </div>
+            </div>
+        </template>
+    </lightning-card>
+</template>

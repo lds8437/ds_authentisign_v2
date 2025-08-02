@@ -1,0 +1,10 @@
+# Exclude Jest test directories for LWC components
+force-app/main/default/lwc/authentiSignMappingLayout/__tests__/**
+force-app/main/default/lwc/authentiSignDocumentSigners/__tests__/**
+force-app/main/default/lwc/authentiSignLayoutList/__tests__/**
+
+# Other common ignores (optional, add if needed)
+node_modules/
+.sfdx/
+.vscode/
+*.log
