@@ -29,6 +29,8 @@ export default class AuthentiSignLayoutList extends NavigationMixin(LightningEle
     @track documentSigningStatusMessage;
     @track documentSigningUrl;
     @track spinner = false;
+    @track showModal = false;
+    @track templateName = '';
 
     get isDocumentSelected() {
         return this.selectedOption === 'document';
@@ -52,6 +54,18 @@ export default class AuthentiSignLayoutList extends NavigationMixin(LightningEle
 
     get btnStartDocumentClass() {
         return this.selectedDocument && this.selectedDocument !== '' ? 'slds-button slds-button_brand' : 'slds-button slds-button_brand slds-hide';
+    }
+
+    get modalClass() {
+        return this.showModal ? 'slds-modal slds-fade-in-open' : 'slds-modal';
+    }
+
+    get backdropClass() {
+        return this.showModal ? 'slds-backdrop slds-backdrop_open' : 'slds-backdrop';
+    }
+
+    get isSubmitDisabled() {
+        return !this.templateName || this.templateName.trim() === '';
     }
 
     connectedCallback() {
@@ -114,25 +128,44 @@ export default class AuthentiSignLayoutList extends NavigationMixin(LightningEle
 
     async navigateToMappings() {
         try {
+            if (!this.selectedRecord) {
+                this.showToast('Error', 'Please select a layout before proceeding.', 'error');
+                return;
+            }
+
+            this.spinner = true;
+            console.log('Navigating to authentiSignMappingLayout with layoutId:', this.selectedRecord);
+
             const mappings = await getLayoutMappings({ layoutId: this.selectedRecord, objectName: this.objectApiName });
-            console.log('Mappings:', mappings);
+            console.log('getLayoutMappings result:', mappings);
+
+            const state = {
+                c__opportunityId: this.recordId,
+                c__layoutId: this.selectedRecord,
+                c__objectName: this.objectApiName,
+                c__mappings: mappings
+            };
+
+            console.log('Navigation state:', state);
 
             this[NavigationMixin.Navigate]({
                 type: 'standard__component',
                 attributes: {
                     componentName: 'c__authentiSignMappingLayout'
                 },
-                state: {
-                    c__layouts: JSON.stringify(this.data),
-                    c__opportunityId: this.recordId,
-                    c__layoutId: this.selectedRecord,
-                    c__mappings: JSON.stringify(mappings),
-                    c__objectName: this.objectApiName
-                }
+                state
             });
         } catch (error) {
             console.error('Error in navigateToMappings:', error);
-            this.showToast('Error', error.body?.message || 'Unknown error', 'error');
+            let errorMessage = 'Failed to navigate to mapping layout';
+            if (error.body?.message) {
+                errorMessage += `: ${error.body.message}`;
+            } else if (error.message) {
+                errorMessage += `: ${error.message}`;
+            }
+            this.showToast('Error', errorMessage, 'error');
+        } finally {
+            this.spinner = false;
         }
     }
 
@@ -202,5 +235,41 @@ export default class AuthentiSignLayoutList extends NavigationMixin(LightningEle
                 variant
             })
         );
+    }
+
+    handleCreateTemplateClick(event) {
+        console.log('Create New Template icon clicked at:', new Date().toISOString());
+        console.log('Event details:', event);
+        this.showModal = true;
+        console.log('showModal set to:', this.showModal);
+    }
+
+    handleCloseModal() {
+        console.log('Closing modal');
+        this.showModal = false;
+        this.templateName = '';
+    }
+
+    handleTemplateNameChange(event) {
+        this.templateName = event.detail.value;
+        console.log('Template name updated:', this.templateName);
+    }
+
+    handleSubmitTemplate() {
+        if (!this.templateName || this.templateName.trim() === '') {
+            this.showToast('Error', 'Please enter a template name.', 'error');
+            return;
+        }
+
+        console.log('Submitting template:', this.templateName);
+        const templateEvent = new CustomEvent('createtemplate', {
+            detail: {
+                templateName: this.templateName
+            }
+        });
+        this.dispatchEvent(templateEvent);
+
+        this.showToast('Success', `Template "${this.templateName}" submitted.`, 'success');
+        this.handleCloseModal();
     }
 }
