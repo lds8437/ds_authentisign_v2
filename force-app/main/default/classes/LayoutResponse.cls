@@ -12,7 +12,7 @@ public with sharing class LayoutResponse {
     public List<LayoutWrapper> wrapper { get; set; }
     
     @AuraEnabled
-    public SObject quote { get; set; }
+    public SObject opportunity { get; set; }
     
     @AuraEnabled
     public String signingStatus { get; set; }

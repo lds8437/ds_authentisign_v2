@@ -5,6 +5,7 @@
 @description        : Helper class for LayoutListCtrl class
 @author             : FFD Developer
 @Modification Log   : 
+  - Updated August 6, 2025: Added createLayout method to send POST request to Authentisign API for creating a new layout.
 *********************************************************
 */
 public with sharing class LayoutListHelper {
@@ -25,8 +26,8 @@ public with sharing class LayoutListHelper {
         
         if (setting != null) {
             // Get record (e.g., Opportunity) by Id
-            SObject record = DataLayer.getRecordById(recordId, objectName); // Updated from getQuoteById
-            result.quote = record;
+            SObject record = DataLayer.getRecordById(recordId, objectName);
+            result.opportunity = record;
             
             // Send layout request
             String responseResult = sendLayoutRequest(setting.Bearer_Token__c, setting.Account_Id__c, setting.Endpoint__c);
@@ -77,6 +78,88 @@ public with sharing class LayoutListHelper {
         responseResult = Utility.sendHttpRequest('GET', endpoint, headers, token, '');
         
         return responseResult;
+    }
+
+    /*
+    *********************************************************
+    @Method Name    : createLayout
+    @description    : Create a new layout via Authentisign API POST request
+    @param          : String templateName
+    @return         : String (layout ID)
+    ********************************************************
+    */
+    public static String createLayout(String templateName) {
+        String responseResult = '';
+        
+        Setting__c setting = Utility.getSetting();
+        
+        if (setting == null) {
+            throw new AuraHandledException('Authentisign settings not found.');
+        }
+        
+        Map<String,String> headers = new Map<String,String>();
+        String endpoint = setting.Endpoint__c + '/api/v1/layouts';
+        
+        // Set headers
+        headers.put('Authorization', 'Bearer ' + setting.Bearer_Token__c);
+        headers.put('Content-Type', 'application/json');
+        headers.put('externalId', setting.Account_Id__c);
+        
+        // Set request body
+        Map<String, String> requestBodyMap = new Map<String, String>();
+        requestBodyMap.put('name', templateName);
+        String requestBody = JSON.serialize(requestBodyMap);
+        
+        // Send POST request
+        try {
+            responseResult = Utility.sendHttpRequest('POST', endpoint, headers, setting.Bearer_Token__c, requestBody);
+            System.debug(LoggingLevel.DEBUG, 'createLayout response: ' + responseResult);
+        } catch (Exception e) {
+            System.debug(LoggingLevel.ERROR, 'HTTP request failed: ' + e.getMessage());
+            throw new AuraHandledException('Failed to call Authentisign API: ' + e.getMessage());
+        }
+        
+        // Parse response to extract layout ID
+        String layoutId;
+        try {
+            // Try deserializing as List<LayoutWrapper> (e.g., [{"id": "xxxx-xx-xxxxxx"}])
+            List<LayoutWrapper> responseList = (List<LayoutWrapper>)JSON.deserialize(responseResult, List<LayoutWrapper>.class);
+            if (responseList != null && !responseList.isEmpty() && String.isNotBlank(responseList[0].id)) {
+                layoutId = responseList[0].id;
+            }
+        } catch (Exception e) {
+            System.debug(LoggingLevel.DEBUG, 'List<LayoutWrapper> deserialization failed: ' + e.getMessage());
+            try {
+                // Fallback to single LayoutWrapper (e.g., {"id": "xxxx-xx-xxxxxx"})
+                LayoutWrapper responseObj = (LayoutWrapper)JSON.deserialize(responseResult, LayoutWrapper.class);
+                if (responseObj != null && String.isNotBlank(responseObj.id)) {
+                    layoutId = responseObj.id;
+                }
+            } catch (Exception e2) {
+                System.debug(LoggingLevel.DEBUG, 'LayoutWrapper deserialization failed: ' + e2.getMessage());
+                try {
+                    // Fallback to Map<String, Object> (e.g., {"data": {"id": "xxxx-xx-xxxxxx"}})
+                    Map<String, Object> responseMap = (Map<String, Object>)JSON.deserializeUntyped(responseResult);
+                    if (responseMap.containsKey('id')) {
+                        layoutId = (String)responseMap.get('id');
+                    } else if (responseMap.containsKey('data')) {
+                        Map<String, Object> dataMap = (Map<String, Object>)responseMap.get('data');
+                        if (dataMap != null && dataMap.containsKey('id')) {
+                            layoutId = (String)dataMap.get('id');
+                        }
+                    }
+                } catch (Exception e3) {
+                    System.debug(LoggingLevel.ERROR, 'Map deserialization failed: ' + e3.getMessage());
+                    throw new AuraHandledException('Failed to parse response: Invalid JSON format.');
+                }
+            }
+        }
+        
+        if (String.isBlank(layoutId)) {
+            throw new AuraHandledException('Failed to retrieve layout ID from response.');
+        }
+        
+        return layoutId;
     }
     
     /*

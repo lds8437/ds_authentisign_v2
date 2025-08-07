@@ -3,6 +3,7 @@ import { NavigationMixin } from 'lightning/navigation';
 import getLayouts from '@salesforce/apex/LayoutListCtrl.getLayouts';
 import getLayoutMappings from '@salesforce/apex/LayoutListCtrl.getLayoutMappings';
 import saveAttachment from '@salesforce/apex/LayoutListCtrl.saveAttachment';
+import createLayout from '@salesforce/apex/LayoutListCtrl.createLayout';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 
 export default class AuthentiSignLayoutList extends NavigationMixin(LightningElement) {
@@ -31,6 +32,7 @@ export default class AuthentiSignLayoutList extends NavigationMixin(LightningEle
     @track spinner = false;
     @track showModal = false;
     @track templateName = '';
+    @track layoutId = '';
 
     get isDocumentSelected() {
         return this.selectedOption === 'document';
@@ -65,7 +67,7 @@ export default class AuthentiSignLayoutList extends NavigationMixin(LightningEle
     }
 
     get isSubmitDisabled() {
-        return !this.templateName || this.templateName.trim() === '';
+        return !this.templateName || this.templateName.trim() === '' || this.spinner;
     }
 
     connectedCallback() {
@@ -241,6 +243,7 @@ export default class AuthentiSignLayoutList extends NavigationMixin(LightningEle
         console.log('Create New Template icon clicked at:', new Date().toISOString());
         console.log('Event details:', event);
         this.showModal = true;
+        this.layoutId = ''; // Reset layoutId when opening modal
         console.log('showModal set to:', this.showModal);
     }
 
@@ -248,6 +251,7 @@ export default class AuthentiSignLayoutList extends NavigationMixin(LightningEle
         console.log('Closing modal');
         this.showModal = false;
         this.templateName = '';
+        this.layoutId = '';
     }
 
     handleTemplateNameChange(event) {
@@ -255,21 +259,32 @@ export default class AuthentiSignLayoutList extends NavigationMixin(LightningEle
         console.log('Template name updated:', this.templateName);
     }
 
-    handleSubmitTemplate() {
+    async handleSubmitTemplate() {
         if (!this.templateName || this.templateName.trim() === '') {
             this.showToast('Error', 'Please enter a template name.', 'error');
             return;
         }
 
-        console.log('Submitting template:', this.templateName);
-        const templateEvent = new CustomEvent('createtemplate', {
-            detail: {
-                templateName: this.templateName
+        this.spinner = true;
+        try {
+            console.log('Submitting template:', this.templateName);
+            const layoutId = await createLayout({ templateName: this.templateName });
+            console.log('Layout ID received:', layoutId);
+            this.layoutId = layoutId;
+            this.showToast('Success', `Template "${this.templateName}" created with ID: ${layoutId}`, 'success');
+            // Keep modal open to display layoutId
+        } catch (error) {
+            console.error('Error in handleSubmitTemplate:', JSON.stringify(error));
+            let errorMessage = 'Failed to create template.';
+            if (error.body && error.body.message) {
+                errorMessage = error.body.message;
+                console.error('Apex error message:', errorMessage);
+            } else if (error.message) {
+                errorMessage = error.message;
             }
-        });
-        this.dispatchEvent(templateEvent);
-
-        this.showToast('Success', `Template "${this.templateName}" submitted.`, 'success');
-        this.handleCloseModal();
+            this.showToast('Error', errorMessage, 'error');
+        } finally {
+            this.spinner = false;
+        }
     }
 }

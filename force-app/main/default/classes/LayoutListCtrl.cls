@@ -4,11 +4,12 @@
 @description        : Apex class contains methods to display the list of layouts fetched from Authentisign.
 @author             : FFD Developer
 @Modification Log   : 
+  - Updated August 6, 2025: Added createLayout method to handle POST request for creating a new layout.
 */
 public with sharing class LayoutListCtrl {
 
     /**
-    @methodname     LayoutResponse
+    @methodname     getLayouts
     @description    Calls helper class method to get the layouts
     @param          recordId 
     @param          objectName
@@ -67,6 +68,22 @@ public with sharing class LayoutListCtrl {
         } catch (Exception e) {
             System.debug(LoggingLevel.ERROR, 'Error in getLayoutMappings: ' + e.getMessage());
             throw new AuraHandledException('Failed to retrieve layout mappings: ' + e.getMessage());
+        }
+    }
+    
+    /**
+    @methodname     createLayout
+    @description    Calls helper class method to create a new layout via Authentisign API
+    @param          templateName
+    @return         String (layout ID)
+    */
+    @AuraEnabled
+    public static String createLayout(String templateName) {
+        try {
+            return LayoutListHelper.createLayout(templateName);
+        } catch (Exception e) {
+            System.debug(LoggingLevel.ERROR, 'Error in createLayout: ' + e.getMessage());
+            throw new AuraHandledException('Failed to create layout: ' + e.getMessage());
         }
     }
 }

@@ -1,6 +1,6 @@
 <template>
     <lightning-card variant="base" title="Authentisign Layout">
-        <!-- Create New Template Icon in Title Row -->
+        <!-- Create New Template Icon -->
         <div slot="actions">
             <lightning-button-icon
                 icon-name="utility:add"
@@ -42,6 +42,20 @@
                             onchange={handleTemplateNameChange}
                             required
                         ></lightning-input>
+                        <template if:true={layoutId}>
+                            <div class="slds-m-top_medium">
+                                <p>
+                                    <b>Layout ID:</b>&nbsp;&nbsp;
+                                    <span class="slds-text-color_success">{layoutId}</span>
+                                    <lightning-icon
+                                        icon-name="utility:check"
+                                        size="small"
+                                        class="slds-m-left_xx-small"
+                                        variant="success"
+                                    ></lightning-icon>
+                                </p>
+                            </div>
+                        </template>
                     </div>
                     <footer class="slds-modal__footer">
                         <button class="slds-button slds-button_neutral" onclick={handleCloseModal}>Cancel</button>
