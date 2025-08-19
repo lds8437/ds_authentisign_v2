@@ -119,44 +119,47 @@ public with sharing class LayoutListHelper {
             throw new AuraHandledException('Failed to call Authentisign API: ' + e.getMessage());
         }
         
-        // Parse response to extract layout ID
-        String layoutId;
-        try {
-            // Try deserializing as List<LayoutWrapper> (e.g., [{"id": "xxxx-xx-xxxxxx"}])
-            List<LayoutWrapper> responseList = (List<LayoutWrapper>)JSON.deserialize(responseResult, List<LayoutWrapper>.class);
-            if (responseList != null && !responseList.isEmpty() && String.isNotBlank(responseList[0].id)) {
-                layoutId = responseList[0].id;
-            }
-        } catch (Exception e) {
-            System.debug(LoggingLevel.DEBUG, 'List<LayoutWrapper> deserialization failed: ' + e.getMessage());
-            try {
-                // Fallback to single LayoutWrapper (e.g., {"id": "xxxx-xx-xxxxxx"})
-                LayoutWrapper responseObj = (LayoutWrapper)JSON.deserialize(responseResult, LayoutWrapper.class);
-                if (responseObj != null && String.isNotBlank(responseObj.id)) {
-                    layoutId = responseObj.id;
-                }
-            } catch (Exception e2) {
-                System.debug(LoggingLevel.DEBUG, 'LayoutWrapper deserialization failed: ' + e2.getMessage());
-                try {
-                    // Fallback to Map<String, Object> (e.g., {"data": {"id": "xxxx-xx-xxxxxx"}})
-                    Map<String, Object> responseMap = (Map<String, Object>)JSON.deserializeUntyped(responseResult);
-                    if (responseMap.containsKey('id')) {
-                        layoutId = (String)responseMap.get('id');
-                    } else if (responseMap.containsKey('data')) {
-                        Map<String, Object> dataMap = (Map<String, Object>)responseMap.get('data');
-                        if (dataMap != null && dataMap.containsKey('id')) {
-                            layoutId = (String)dataMap.get('id');
-                        }
-                    }
-                } catch (Exception e3) {
-                    System.debug(LoggingLevel.ERROR, 'Map deserialization failed: ' + e3.getMessage());
-                    throw new AuraHandledException('Failed to parse response: Invalid JSON format.');
-                }
-            }
+        // Validate response as layout ID
+        if (String.isBlank(responseResult)) {
+            throw new AuraHandledException('Failed to retrieve layout ID: Empty response.');
         }
         
-        if (String.isBlank(layoutId)) {
-            throw new AuraHandledException('Failed to retrieve layout ID from response.');
+        // Assume response is the layout ID string
+        String layoutId = responseResult.trim();
+         
+        // Remove quotes if present
+        if (layoutId.startsWith('"') && layoutId.endsWith('"')) {
+            layoutId = layoutId.substring(1, layoutId.length() - 1);
+        }
+
+       // Validate UUID format
+        Pattern uuidPattern = Pattern.compile('^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$');
+        Matcher uuidMatcher = uuidPattern.matcher(layoutId);
+        if (!uuidMatcher.matches()) {
+            // Try JSON parsing as a fallback
+            try {
+                Map<String, Object> responseMap = (Map<String, Object>)JSON.deserializeUntyped(responseResult);
+                if (responseMap.containsKey('id')) {
+                    layoutId = (String)responseMap.get('id');
+                } else if (responseMap.containsKey('data')) {
+                    Map<String, Object> dataMap = (Map<String, Object>)responseMap.get('data');
+                    if (dataMap != null && dataMap.containsKey('id')) {
+                        layoutId = (String)dataMap.get('id');
+                    }
+                }
+                if (String.isBlank(layoutId)) {
+                    throw new AuraHandledException('Failed to retrieve layout ID from JSON response.');
+                }
+                // Re-validate UUID format
+
+                uuidMatcher = uuidPattern.matcher(layoutId);
+                if (!uuidMatcher.matches()) {
+                    throw new AuraHandledException('Invalid layout ID format: ' + layoutId);
+                }
+            } catch (Exception e) {
+                System.debug(LoggingLevel.ERROR, 'JSON parsing failed: ' + e.getMessage());
+                throw new AuraHandledException('Invalid response format: ' + responseResult);
+            }
         }
         
         return layoutId;

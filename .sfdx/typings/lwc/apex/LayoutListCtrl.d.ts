@@ -7,3 +7,6 @@ declare module "@salesforce/apex/LayoutListCtrl.saveAttachment" {
 declare module "@salesforce/apex/LayoutListCtrl.getLayoutMappings" {
   export default function getLayoutMappings(param: {layoutId: any, objectName: any}): Promise<any>;
 }
+declare module "@salesforce/apex/LayoutListCtrl.createLayout" {
+  export default function createLayout(param: {templateName: any}): Promise<any>;
+}

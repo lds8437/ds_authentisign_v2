@@ -82,6 +82,7 @@ public with sharing class Utility {
             System.debug('Authorization: ' + r.getHeader('Authorization'));
 
             HttpResponse resp = h.send(r);
+             System.debug('status: ' + resp.getStatusCode());
             String body = resp.getBody();
             System.debug('response body: ' + body);
 
