@@ -4,6 +4,7 @@ import getLayouts from '@salesforce/apex/LayoutListCtrl.getLayouts';
 import getLayoutMappings from '@salesforce/apex/LayoutListCtrl.getLayoutMappings';
 import saveAttachment from '@salesforce/apex/LayoutListCtrl.saveAttachment';
 import createLayout from '@salesforce/apex/LayoutListCtrl.createLayout';
+import getSSOUrl from '@salesforce/apex/LayoutListCtrl.getSSOUrl';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 
 export default class AuthentiSignLayoutList extends NavigationMixin(LightningElement) {
@@ -33,6 +34,8 @@ export default class AuthentiSignLayoutList extends NavigationMixin(LightningEle
     @track showModal = false;
     @track templateName = '';
     @track layoutId = '';
+    @track error;
+    @track signingId = '9f3a7828-6953-f011-8f7c-000d3a8a9962'; // Hardcoded signingId
 
     get isDocumentSelected() {
         return this.selectedOption === 'document';
@@ -244,6 +247,7 @@ export default class AuthentiSignLayoutList extends NavigationMixin(LightningEle
         console.log('Event details:', event);
         this.showModal = true;
         this.layoutId = ''; // Reset layoutId when opening modal
+        this.error = null; // Reset error
         console.log('showModal set to:', this.showModal);
     }
 
@@ -252,6 +256,7 @@ export default class AuthentiSignLayoutList extends NavigationMixin(LightningEle
         this.showModal = false;
         this.templateName = '';
         this.layoutId = '';
+        this.error = null;
     }
 
     handleTemplateNameChange(event) {
@@ -266,13 +271,14 @@ export default class AuthentiSignLayoutList extends NavigationMixin(LightningEle
         }
 
         this.spinner = true;
+        this.error = null;
         try {
             console.log('Submitting template:', this.templateName);
             const layoutId = await createLayout({ templateName: this.templateName });
             console.log('Layout ID received:', layoutId);
             this.layoutId = layoutId;
             this.showToast('Success', `Template "${this.templateName}" created with ID: ${layoutId}`, 'success');
-            // Keep modal open to display layoutId
+            // Keep modal open to display layoutId and Launch SSO button
         } catch (error) {
             console.error('Error in handleSubmitTemplate:', JSON.stringify(error));
             let errorMessage = 'Failed to create template.';
@@ -282,6 +288,31 @@ export default class AuthentiSignLayoutList extends NavigationMixin(LightningEle
             } else if (error.message) {
                 errorMessage = error.message;
             }
+            this.error = errorMessage;
+            this.showToast('Error', errorMessage, 'error');
+        } finally {
+            this.spinner = false;
+        }
+    }
+
+    async handleLaunchSSO() {
+        console.log('Launching SSO for signingId:', this.signingId);
+        this.spinner = true;
+        this.error = null;
+        try {
+            const ssoUrl = await getSSOUrl({ signingId: this.signingId });
+            console.log('SSO URL received:', ssoUrl);
+            window.open(ssoUrl, '_blank');
+        } catch (error) {
+            console.error('Error in handleLaunchSSO:', JSON.stringify(error));
+            let errorMessage = 'Failed to launch SSO.';
+            if (error.body && error.body.message) {
+                errorMessage = error.body.message;
+                console.error('Apex error message:', errorMessage);
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
+            this.error = errorMessage;
             this.showToast('Error', errorMessage, 'error');
         } finally {
             this.spinner = false;

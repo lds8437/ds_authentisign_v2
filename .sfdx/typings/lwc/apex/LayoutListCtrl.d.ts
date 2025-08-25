@@ -10,3 +10,6 @@ declare module "@salesforce/apex/LayoutListCtrl.getLayoutMappings" {
 declare module "@salesforce/apex/LayoutListCtrl.createLayout" {
   export default function createLayout(param: {templateName: any}): Promise<any>;
 }
+declare module "@salesforce/apex/LayoutListCtrl.getSSOUrl" {
+  export default function getSSOUrl(param: {signingId: any}): Promise<any>;
+}

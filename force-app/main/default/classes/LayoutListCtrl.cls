@@ -86,4 +86,14 @@ public with sharing class LayoutListCtrl {
             throw new AuraHandledException('Failed to create layout: ' + e.getMessage());
         }
     }
+
+    @AuraEnabled
+    public static String getSSOUrl(String signingId) {
+        try {
+            return LayoutListHelper.getSSOUrl(signingId);
+        } catch (Exception e) {
+            System.debug(LoggingLevel.ERROR, 'Error in getSSOUrl: ' + e.getMessage());
+            throw new AuraHandledException('Error fetching SSO URL: ' + e.getMessage());
+        }
+    }
 }
