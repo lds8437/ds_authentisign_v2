@@ -3,6 +3,8 @@ import { NavigationMixin } from 'lightning/navigation';
 import getLayouts from '@salesforce/apex/LayoutListCtrl.getLayouts';
 import getLayoutMappings from '@salesforce/apex/LayoutListCtrl.getLayoutMappings';
 import saveAttachment from '@salesforce/apex/LayoutListCtrl.saveAttachment';
+import createLayout from '@salesforce/apex/LayoutListCtrl.createLayout';
+import getSSOUrl from '@salesforce/apex/LayoutListCtrl.getSSOUrl';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 
 export default class AuthentiSignLayoutList extends NavigationMixin(LightningElement) {
@@ -29,6 +31,11 @@ export default class AuthentiSignLayoutList extends NavigationMixin(LightningEle
     @track documentSigningStatusMessage;
     @track documentSigningUrl;
     @track spinner = false;
+    @track showModal = false;
+    @track templateName = '';
+    @track layoutId = '';
+    @track error;
+    @track signingId = '9f3a7828-6953-f011-8f7c-000d3a8a9962'; // Hardcoded signingId
 
     get isDocumentSelected() {
         return this.selectedOption === 'document';
@@ -52,6 +59,18 @@ export default class AuthentiSignLayoutList extends NavigationMixin(LightningEle
 
     get btnStartDocumentClass() {
         return this.selectedDocument && this.selectedDocument !== '' ? 'slds-button slds-button_brand' : 'slds-button slds-button_brand slds-hide';
+    }
+
+    get modalClass() {
+        return this.showModal ? 'slds-modal slds-fade-in-open' : 'slds-modal';
+    }
+
+    get backdropClass() {
+        return this.showModal ? 'slds-backdrop slds-backdrop_open' : 'slds-backdrop';
+    }
+
+    get isSubmitDisabled() {
+        return !this.templateName || this.templateName.trim() === '' || this.spinner;
     }
 
     connectedCallback() {
@@ -114,25 +133,44 @@ export default class AuthentiSignLayoutList extends NavigationMixin(LightningEle
 
     async navigateToMappings() {
         try {
+            if (!this.selectedRecord) {
+                this.showToast('Error', 'Please select a layout before proceeding.', 'error');
+                return;
+            }
+
+            this.spinner = true;
+            console.log('Navigating to authentiSignMappingLayout with layoutId:', this.selectedRecord);
+
             const mappings = await getLayoutMappings({ layoutId: this.selectedRecord, objectName: this.objectApiName });
-            console.log('Mappings:', mappings);
+            console.log('getLayoutMappings result:', mappings);
+
+            const state = {
+                c__opportunityId: this.recordId,
+                c__layoutId: this.selectedRecord,
+                c__objectName: this.objectApiName,
+                c__mappings: mappings
+            };
+
+            console.log('Navigation state:', state);
 
             this[NavigationMixin.Navigate]({
                 type: 'standard__component',
                 attributes: {
                     componentName: 'c__authentiSignMappingLayout'
                 },
-                state: {
-                    c__layouts: JSON.stringify(this.data),
-                    c__opportunityId: this.recordId,
-                    c__layoutId: this.selectedRecord,
-                    c__mappings: JSON.stringify(mappings),
-                    c__objectName: this.objectApiName
-                }
+                state
             });
         } catch (error) {
             console.error('Error in navigateToMappings:', error);
-            this.showToast('Error', error.body?.message || 'Unknown error', 'error');
+            let errorMessage = 'Failed to navigate to mapping layout';
+            if (error.body?.message) {
+                errorMessage += `: ${error.body.message}`;
+            } else if (error.message) {
+                errorMessage += `: ${error.message}`;
+            }
+            this.showToast('Error', errorMessage, 'error');
+        } finally {
+            this.spinner = false;
         }
     }
 
@@ -202,5 +240,82 @@ export default class AuthentiSignLayoutList extends NavigationMixin(LightningEle
                 variant
             })
         );
+    }
+
+    handleCreateTemplateClick(event) {
+        console.log('Create New Template icon clicked at:', new Date().toISOString());
+        console.log('Event details:', event);
+        this.showModal = true;
+        this.layoutId = ''; // Reset layoutId when opening modal
+        this.error = null; // Reset error
+        console.log('showModal set to:', this.showModal);
+    }
+
+    handleCloseModal() {
+        console.log('Closing modal');
+        this.showModal = false;
+        this.templateName = '';
+        this.layoutId = '';
+        this.error = null;
+    }
+
+    handleTemplateNameChange(event) {
+        this.templateName = event.detail.value;
+        console.log('Template name updated:', this.templateName);
+    }
+
+    async handleSubmitTemplate() {
+        if (!this.templateName || this.templateName.trim() === '') {
+            this.showToast('Error', 'Please enter a template name.', 'error');
+            return;
+        }
+
+        this.spinner = true;
+        this.error = null;
+        try {
+            console.log('Submitting template:', this.templateName);
+            const layoutId = await createLayout({ templateName: this.templateName });
+            console.log('Layout ID received:', layoutId);
+            this.layoutId = layoutId;
+            this.showToast('Success', `Template "${this.templateName}" created with ID: ${layoutId}`, 'success');
+            // Keep modal open to display layoutId and Launch SSO button
+        } catch (error) {
+            console.error('Error in handleSubmitTemplate:', JSON.stringify(error));
+            let errorMessage = 'Failed to create template.';
+            if (error.body && error.body.message) {
+                errorMessage = error.body.message;
+                console.error('Apex error message:', errorMessage);
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
+            this.error = errorMessage;
+            this.showToast('Error', errorMessage, 'error');
+        } finally {
+            this.spinner = false;
+        }
+    }
+
+    async handleLaunchSSO() {
+        console.log('Launching SSO for signingId:', this.signingId);
+        this.spinner = true;
+        this.error = null;
+        try {
+            const ssoUrl = await getSSOUrl({ signingId: this.signingId });
+            console.log('SSO URL received:', ssoUrl);
+            window.open(ssoUrl, '_blank');
+        } catch (error) {
+            console.error('Error in handleLaunchSSO:', JSON.stringify(error));
+            let errorMessage = 'Failed to launch SSO.';
+            if (error.body && error.body.message) {
+                errorMessage = error.body.message;
+                console.error('Apex error message:', errorMessage);
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
+            this.error = errorMessage;
+            this.showToast('Error', errorMessage, 'error');
+        } finally {
+            this.spinner = false;
+        }
     }
 }

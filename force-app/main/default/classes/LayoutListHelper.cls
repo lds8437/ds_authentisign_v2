@@ -5,6 +5,11 @@
 @description        : Helper class for LayoutListCtrl class
 @author             : FFD Developer
 @Modification Log   : 
+  - Updated August 6, 2025: Added createLayout method to send POST request to Authentisign API for creating a new layout.
+  - Updated August 19, 2025: Updated createLayout to handle string response (layout ID).
+  - Updated August 19, 2025: Fixed UUID validation using Pattern and Matcher.
+  - Updated August 19, 2025: Handle quoted UUID string in response.
+  - Updated August 21, 2025: Added getSSOUrl method to fetch SSO URL for layout.
 *********************************************************
 */
 public with sharing class LayoutListHelper {
@@ -25,8 +30,8 @@ public with sharing class LayoutListHelper {
         
         if (setting != null) {
             // Get record (e.g., Opportunity) by Id
-            SObject record = DataLayer.getRecordById(recordId, objectName); // Updated from getQuoteById
-            result.quote = record;
+            SObject record = DataLayer.getRecordById(recordId, objectName);
+            result.opportunity = record;
             
             // Send layout request
             String responseResult = sendLayoutRequest(setting.Bearer_Token__c, setting.Account_Id__c, setting.Endpoint__c);
@@ -77,6 +82,160 @@ public with sharing class LayoutListHelper {
         responseResult = Utility.sendHttpRequest('GET', endpoint, headers, token, '');
         
         return responseResult;
+    }
+    
+    /*
+    *********************************************************
+    @Method Name    : createLayout
+    @description    : Create a new layout via Authentisign API POST request
+    @param          : String templateName
+    @return         : String (layout ID)
+    ********************************************************
+    */
+    public static String createLayout(String templateName) {
+        String responseResult = '';
+        
+        Setting__c setting = Utility.getSetting();
+        
+        if (setting == null) {
+            throw new AuraHandledException('Authentisign settings not found.');
+        }
+        
+        Map<String,String> headers = new Map<String,String>();
+        String endpoint = setting.Endpoint__c + '/api/v1/layouts';
+        
+        // Set headers
+        headers.put('Authorization', 'Bearer ' + setting.Bearer_Token__c);
+        headers.put('Content-Type', 'application/json');
+        headers.put('externalId', setting.Account_Id__c);
+        
+        // Set request body
+        Map<String, String> requestBodyMap = new Map<String, String>();
+        requestBodyMap.put('name', templateName);
+        String requestBody = JSON.serialize(requestBodyMap);
+        
+        // Send POST request
+        try {
+            responseResult = Utility.sendHttpRequest('POST', endpoint, headers, setting.Bearer_Token__c, requestBody);
+            System.debug(LoggingLevel.DEBUG, 'createLayout response: ' + responseResult);
+        } catch (Exception e) {
+            System.debug(LoggingLevel.ERROR, 'HTTP request failed: ' + e.getMessage());
+            throw new AuraHandledException('Failed to call Authentisign API: ' + e.getMessage());
+        }
+        
+        // Validate response as layout ID
+        if (String.isBlank(responseResult)) {
+            throw new AuraHandledException('Failed to retrieve layout ID: Empty response.');
+        }
+        
+        // Assume response is the layout ID string, possibly quoted
+        String layoutId = responseResult.trim();
+        // Remove quotes if present
+        if (layoutId.startsWith('"') && layoutId.endsWith('"')) {
+            layoutId = layoutId.substring(1, layoutId.length() - 1);
+        }
+        // Validate UUID format
+        Pattern uuidPattern = Pattern.compile('^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$');
+        Matcher uuidMatcher = uuidPattern.matcher(layoutId);
+        if (!uuidMatcher.matches()) {
+            // Try JSON parsing as a fallback
+            try {
+                Map<String, Object> responseMap = (Map<String, Object>)JSON.deserializeUntyped(responseResult);
+                if (responseMap.containsKey('id')) {
+                    layoutId = (String)responseMap.get('id');
+                } else if (responseMap.containsKey('data')) {
+                    Map<String, Object> dataMap = (Map<String, Object>)responseMap.get('data');
+                    if (dataMap != null && dataMap.containsKey('id')) {
+                        layoutId = (String)dataMap.get('id');
+                    }
+                }
+                if (String.isBlank(layoutId)) {
+                    throw new AuraHandledException('Failed to retrieve layout ID from JSON response.');
+                }
+                // Re-validate UUID format
+                uuidMatcher = uuidPattern.matcher(layoutId);
+                if (!uuidMatcher.matches()) {
+                    throw new AuraHandledException('Invalid layout ID format: ' + layoutId);
+                }
+            } catch (Exception e) {
+                System.debug(LoggingLevel.ERROR, 'JSON parsing failed: ' + e.getMessage());
+                throw new AuraHandledException('Invalid response format: ' + responseResult);
+            }
+        }
+        
+        return layoutId;
+    }
+    
+     /*
+    *********************************************************
+    @Method Name    : getSSOUrl
+    @description    : Fetch the SSO URL for a signing session from Authentisign API
+    @param          : String signingId
+    @return         : String (SSO URL)
+    ********************************************************
+    */
+    public static String getSSOUrl(String signingId) {
+        String responseResult = '';
+        
+        Setting__c setting = Utility.getSetting();
+        
+        if (setting == null) {
+            throw new AuraHandledException('Authentisign settings not found.');
+        }
+        
+        // Hardcode signingId for testing
+        signingId = String.isBlank(signingId) ? '9f3a7828-6953-f011-8f7c-000d3a8a9962' : signingId;
+        
+        if (String.isBlank(signingId)) {
+            throw new AuraHandledException('Signing ID is required for SSO.');
+        }
+        
+        // Construct redirect URL dynamically
+        String orgDomain = URL.getOrgDomainUrl().toExternalForm();
+        String redirectUrl = orgDomain + '/apex/AuthentisignReturnPage';
+        
+        // Construct endpoint
+        String endpoint = setting.Endpoint__c + '/api/v1/sso/signing/' + signingId + 
+            '?redirectUrl=' + EncodingUtil.urlEncode(redirectUrl, 'UTF-8');
+        
+        // Set headers
+        Map<String,String> headers = new Map<String,String>();
+        headers.put('Authorization', 'Bearer ' + setting.Bearer_Token__c);
+        headers.put('Accept', '*/*');
+        headers.put('externalId', setting.Account_Id__c);
+        System.debug(LoggingLevel.DEBUG, 'getSSOUrl endpoint: ' + endpoint);
+
+        // Send GET request
+        try {
+            responseResult = Utility.sendHttpRequest('GET', endpoint, headers, setting.Bearer_Token__c, '');
+            System.debug(LoggingLevel.DEBUG, 'getSSOUrl endpoint: ' + endpoint);
+            System.debug(LoggingLevel.DEBUG, 'getSSOUrl response: ' + responseResult);
+        } catch (Exception e) {
+            System.debug(LoggingLevel.ERROR, 'HTTP request failed: ' + e.getMessage());
+            throw new AuraHandledException('Failed to fetch SSO URL: ' + e.getMessage());
+        }
+        
+        // Parse response
+        if (String.isBlank(responseResult)) {
+            throw new AuraHandledException('Failed to retrieve SSO URL: Empty response.');
+        }
+        
+        try {
+            Map<String, Object> responseMap = (Map<String, Object>)JSON.deserializeUntyped(responseResult);
+            if (responseMap.containsKey('sso')) {
+                String ssoUrl = (String)responseMap.get('sso');
+                if (String.isBlank(ssoUrl)) {
+                    throw new AuraHandledException('SSO URL is empty in response.');
+                }
+                System.debug(LoggingLevel.DEBUG, 'Retrieved SSO URL: ' + ssoUrl);
+                return ssoUrl;
+            } else {
+                throw new AuraHandledException('SSO URL not found in response: ' + responseResult);
+            }
+        } catch (Exception e) {
+            System.debug(LoggingLevel.ERROR, 'JSON parsing failed: ' + e.getMessage());
+            throw new AuraHandledException('Invalid SSO response format: ' + responseResult);
+        }
     }
     
     /*
