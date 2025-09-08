@@ -28,5 +28,52 @@
         <members>authentiSignMappingLayout</members>
         <name>LightningComponentBundle</name>
     </types>
+    <types>
+        <members>Authentisign_Setting__mdt.Endpoint__c</members>
+        <members>Callback_Response__c.Body__c</members>
+        <members>Callback_Response__c.Headers__c</members>
+        <members>Callback_Response__c.Params__c</members>
+        <members>Callback_Response__c.Uri__c</members>
+        <members>Layout_Mapping__c.Layout_Id__c</members>
+        <members>Layout_Mapping__c.Mapping__c</members>
+        <members>Layout_Mapping__c.Object__c</members>
+        <members>Layout_Mapping__c.Unique_Id__c</members>
+        <members>Opportunity.Authsign_Status__c</members>
+        <members>Opportunity.Authsign_Document_Status__c</members>
+        <members>Opportunity.AttachmentId__c</members>  
+        <members>Opportunity.Document_Attachment_Id__c</members>
+        <members>Opportunity.Document_Id__c</members>
+        <members>Opportunity.Document_Signing_Id__c</members>
+        <members>Opportunity.Layout_Id__c</members>
+        <members>Opportunity.Signing_Id__c</members>
+        <members>Record_Signing__c.Layout_Id__c</members>
+        <members>Record_Signing__c.Signing_Id__c</members>
+        <members>Record_Signing__c.Signing_Request__c</members>
+        <members>Record_Signing__c.Signing_Response__c</members>
+        <members>Record_Signing__c.Type__c</members>
+        <members>Setting__c.Account_Id__c</members>
+        <members>Setting__c.Endpoint__c</members>
+        <name>CustomField</name>
+    </types>
+    <types>
+        <members>Authentisign_Setting__mdt</members>
+        <members>Callback_Response__c</members>
+        <members>Layout_Mapping__c</members>
+        <members>Record_Signing__c</members>
+        <members>Setting__c</members>
+        <name>CustomObject</name>
+    </types>
+    <types>
+        <members>Authentisign_Setting__mdt-Authentisign Setting Layout</members>
+        <members>Callback_Response__c-Callback Response Layout</members>
+        <members>Layout_Mapping__c-Layout Mapping Layout</members>
+        <members>Record_Signing__c-Record Signing Layout</members>
+        <members>Setting__c-Setting Layout</members>
+        <name>Layout</name>
+    </types>
+    <types>
+        <members>AuthentisignAPI</members>
+        <name>RemoteSiteSetting</name>
+    </types>
 	<version>63.0</version>
 </Package>
