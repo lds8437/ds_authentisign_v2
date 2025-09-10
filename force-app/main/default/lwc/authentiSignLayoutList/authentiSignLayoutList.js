@@ -144,31 +144,22 @@ export default class AuthentiSignLayoutList extends NavigationMixin(LightningEle
             const mappings = await getLayoutMappings({ layoutId: this.selectedRecord, objectName: this.objectApiName });
             console.log('getLayoutMappings result:', mappings);
 
-            const state = {
-                c__opportunityId: this.recordId,
-                c__layoutId: this.selectedRecord,
-                c__objectName: this.objectApiName,
-                c__mappings: mappings
-            };
-
-            console.log('Navigation state:', state);
-
             this[NavigationMixin.Navigate]({
                 type: 'standard__component',
                 attributes: {
                     componentName: 'c__authentiSignMappingLayout'
                 },
-                state
+                state: {
+                    c__layouts: JSON.stringify(this.data),
+                    c__opportunityId: this.recordId,
+                    c__layoutId: this.selectedRecord,
+                    c__mappings: mappings,
+                    c__objectName: this.objectApiName
+                }
             });
         } catch (error) {
             console.error('Error in navigateToMappings:', error);
-            let errorMessage = 'Failed to navigate to mapping layout';
-            if (error.body?.message) {
-                errorMessage += `: ${error.body.message}`;
-            } else if (error.message) {
-                errorMessage += `: ${error.message}`;
-            }
-            this.showToast('Error', errorMessage, 'error');
+            this.showToast('Error', error.body?.message || 'Unknown error', 'error');
         } finally {
             this.spinner = false;
         }

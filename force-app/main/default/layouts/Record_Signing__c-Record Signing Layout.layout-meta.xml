@@ -16,10 +16,6 @@
             </layoutItems>
             <layoutItems>
                 <behavior>Edit</behavior>
-                <field>Quote_Id__c</field>
-            </layoutItems>
-            <layoutItems>
-                <behavior>Edit</behavior>
                 <field>Signing_Id__c</field>
             </layoutItems>
             <layoutItems>
@@ -33,10 +29,6 @@
             <layoutItems>
                 <behavior>Edit</behavior>
                 <field>Type__c</field>
-            </layoutItems>
-            <layoutItems>
-                <behavior>Edit</behavior>
-                <field>Quote_Id_CPQ__c</field>
             </layoutItems>
         </layoutColumns>
         <layoutColumns>

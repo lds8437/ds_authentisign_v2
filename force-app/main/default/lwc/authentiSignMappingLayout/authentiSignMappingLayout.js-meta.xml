@@ -9,17 +9,13 @@
         <target>lightningCommunity__Page</target>
         <target>lightning__Tab</target>
         <target>lightning__FlowScreen</target>
+        <target>lightning__UrlAddressable</target>
     </targets>
     <targetConfigs>
         <targetConfig targets="lightning__RecordPage">
             <objects>
                 <object>Opportunity</object>
             </objects>
-            <property name="layouts" type="String"/>
-            <property name="opportunityId" type="String"/>
-            <property name="layoutId" type="String"/>
-            <property name="mappings" type="String"/>
-            <property name="objectName" type="String" default="Opportunity"/>
         </targetConfig>
     </targetConfigs>
 </LightningComponentBundle>
