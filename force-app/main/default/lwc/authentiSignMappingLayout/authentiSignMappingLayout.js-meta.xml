@@ -11,11 +11,4 @@
         <target>lightning__FlowScreen</target>
         <target>lightning__UrlAddressable</target>
     </targets>
-    <targetConfigs>
-        <targetConfig targets="lightning__RecordPage">
-            <objects>
-                <object>Opportunity</object>
-            </objects>
-        </targetConfig>
-    </targetConfigs>
 </LightningComponentBundle>

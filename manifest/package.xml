@@ -47,6 +47,7 @@
         <members>Opportunity.Layout_Id__c</members>
         <members>Opportunity.Signing_Id__c</members>
         <members>Record_Signing__c.Layout_Id__c</members>
+        <members>Record_Signing__c.Opportunity_Id__c</members>
         <members>Record_Signing__c.Signing_Id__c</members>
         <members>Record_Signing__c.Signing_Request__c</members>
         <members>Record_Signing__c.Signing_Response__c</members>
